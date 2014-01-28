@@ -1,0 +1,15 @@
+{
+    "name": "Chartblocks SDK",
+    "description": "Chartblocks SDK",
+    "homepage": "http://www.chartblocks.com",
+    "license" : "MIT",
+    "require": {
+        "php": ">=5.4",
+        "guzzle/http": "3.7.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "Chartblocks\\": "src/Chartblocks"
+        }
+    }
+}
