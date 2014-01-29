@@ -1,6 +1,6 @@
 {
-    "name": "Chartblocks/php-rest-sdk",
-    "description": "Chartblocks SDK",
+    "name": "chartblocks/php-rest-sdk",
+    "description": "ChartBlocks SDK",
     "homepage": "http://www.chartblocks.com",
     "license" : "MIT",
     "require": {
@@ -9,7 +9,7 @@
     },
     "autoload": {
         "psr-0": {
-            "Chartblocks\\": "src/Chartblocks"
+            "ChartBlocks\\": "src/"
         }
     }
 }
