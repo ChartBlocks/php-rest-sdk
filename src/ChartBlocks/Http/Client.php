@@ -8,16 +8,26 @@ class Client extends HttpClient {
 
     protected $exceptionHandler;
 
-    public function get($uri = null, $headers = null, $options = array()) {
-        $request = parent::get($uri, $headers, $options);
+    public function getJson($uri = null) {
+        $request = $this->get($uri);
+        $response = $this->sendRequest($request);
+        return $response->json();
+    }
 
+    public function putJson($uri = null, $data = array()) {
+        $request = $this->put($uri, null, json_encode($data));
+        $response = $this->sendRequest($request);
+        return $response->json();
+    }
+
+    public function sendRequest($request) {
         try {
             $response = $request->send();
         } catch (ClientErrorResponseException $e) {
             $handler = $this->getExceptionHandler();
             $handler->handle($e);
         }
-        return $response->json();
+        return $response;
     }
 
     public function getExceptionHandler() {

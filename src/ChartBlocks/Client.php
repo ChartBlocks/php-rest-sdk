@@ -106,7 +106,7 @@ class Client {
     public function getDataSet($id) {
         $client = $this->getHttpClient();
 
-        $data = $client->get('set/' . $id);
+        $data = $client->getJson('set/' . $id);
 
         if (!array_key_exists('set', $data)) {
             throw new Exception('Key "set" data could not be found in the response');

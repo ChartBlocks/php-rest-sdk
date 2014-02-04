@@ -11,11 +11,9 @@ class Signature {
 
         switch ($method) {
             case 'post':
-                $body = ((string) $request)? : $request->getPost()->toString();
-                break;
             case 'patch':
             case 'put':
-                $body = (string) $request;
+                $body = (string) $request->getBody();
                 break;
             default:
                 $body = $request->getQuery(true);
