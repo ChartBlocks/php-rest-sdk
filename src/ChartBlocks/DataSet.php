@@ -49,7 +49,6 @@ class DataSet implements ClientAwareInterface {
     public function createRow() {
         $meta = $this->getMeta();
         $latestVersionMeta = $this->getLatestVersionMeta();
-
         return new DataSet\Row(
                 array(
             'id' => $meta['id'],

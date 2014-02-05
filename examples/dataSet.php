@@ -24,15 +24,18 @@ $dataSet = $client->getDataSet($dataSetId);
 
 $row = $dataSet->createRow();
 
-//$row->getCell(0)
-//        ->setValue('hello world');
-//$row->getCell(2)
-//        ->setValue('testing');
-//$row->getCell(4)
-//        ->setValue('woot woot');
-//
-//$row->save();
+$row->getCell(1)
+        ->setValue('woot');
+$row->getCell(3)
+        ->setValue('hmm woot');
+$row->getCell(5)
+        ->setValue('woot hmm');
+$row->getCell(7)
+        ->setValue('yay woot');
+$row->getCell(9)
+        ->setValue('woot yay');
 
+$row->save();
 $offset = 0;
 $limit = 0;
 
@@ -42,9 +45,8 @@ $rowSet = $dataSet->select(array(
         )
 );
 
-$rowSet->getRow(0)->getCell(0)->setValue('I hope this works!!!')->save();
+$rowSet->getRow(24)->getCell(0)->setValue('putting something in row 25')->save();
 
-exit;
 $i = $offset + 1;
 ?>
 

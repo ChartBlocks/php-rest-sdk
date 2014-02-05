@@ -64,7 +64,7 @@ class Cell implements DataSetAwareInterface {
     }
 
     public function setRow($row) {
-        $this->row = (int) $row;
+        $this->row = $row;
         return $this;
     }
 
@@ -83,19 +83,21 @@ class Cell implements DataSetAwareInterface {
         $row = $this->getRow();
 
         if ($row === null) {
-            $json = $client->putJson('data/append/' . $id, array(
-                'data' => array(
-                    array(
-                        $this->getColumn() => $this->getValue()
-                    )
-                )
-            ));
-            return !!$json['success'];
+            $url = 'data/append/' . $id;
+            $row = 0;
         } else {
-
-            $client->putJson('/data/' . $id);
-            return !!$json['success'];
+            $url = 'data/' . $id;
         }
+        $data = array(
+            'data' => array(
+                $row? : 0 => array(
+                    $this->getColumn() => $this->getValue()
+                )
+            )
+        );
+
+        $json = $client->putJson($url, $data);
+        return !!$json['success'];
     }
 
 }

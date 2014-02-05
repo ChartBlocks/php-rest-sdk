@@ -43,6 +43,7 @@ class Row implements DataSetAwareInterface {
                 $cell = array('value' => $cell);
             }
             $cell['column'] = $index;
+            $cell['row'] = $this->getRow();
             $cell = new Cell($cell, $this->getDataSet());
         }
         $this->cells[$index] = $cell;
@@ -79,6 +80,7 @@ class Row implements DataSetAwareInterface {
 
         $cell = new Cell(array(
             'column' => $index,
+            'row' => $this->getRow()
                 ), $this->getDataSet());
         $this->setCell($index, $cell);
         return $cell;
@@ -130,7 +132,7 @@ class Row implements DataSetAwareInterface {
     }
 
     public function setRow($row) {
-        $this->row = (int) $row;
+        $this->row = $row;
         return $this;
     }
 
