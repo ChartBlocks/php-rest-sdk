@@ -67,23 +67,21 @@ class RowSet extends \ArrayObject implements DataSetAwareInterface {
         $versionMeta = $this->getVersionMeta();
 
         $limit = $query->getLimit();
-        $max = $limit + ($query->getOffset()? : 0);
+        $max = $limit + ($query->getOffset()? : 0) + 1;
 
-        $zeroIndexedRows = $versionMeta['rows'] - 1;
-
-        if (($index < $max || !$limit) && ($index <= $zeroIndexedRows)) {
+        if (($index < $max || !$limit) && ($index < $versionMeta['rows'])) {
             return true;
         }
         return false;
     }
 
-    public function load($index = 0) {
+    public function load($index = 1) {
         $dataSet = $this->getDataSet();
         $setMeta = $dataSet->getMeta();
         $versionMeta = $this->getVersionMeta();
         $client = $dataSet->getHttpClient();
 
-        $offset = $index;
+        $offset = $index - 1;
 
 
         $query = $this->getQuery();

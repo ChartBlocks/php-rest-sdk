@@ -35,7 +35,7 @@ $row->getCell(7)
 $row->getCell(9)
         ->setValue('woot yay');
 
-$row->save();
+// $row->save();
 $offset = 0;
 $limit = 0;
 
@@ -45,7 +45,7 @@ $rowSet = $dataSet->select(array(
         )
 );
 
-$rowSet->getRow(24)->getCell(0)->setValue('putting something in row 25')->save();
+//$rowSet->getRow(24)->getCell(2)->setValue('putting something in row 25')->save();
 
 $i = $offset + 1;
 ?>

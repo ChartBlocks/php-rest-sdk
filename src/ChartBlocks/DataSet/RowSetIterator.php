@@ -4,7 +4,7 @@ namespace ChartBlocks\DataSet;
 
 class RowSetIterator extends \ArrayIterator {
 
-    protected $index = 0;
+    protected $index = 1;
     protected $rows = array();
     protected $rowSet;
 
@@ -25,7 +25,7 @@ class RowSetIterator extends \ArrayIterator {
     public function rewind() {
         $rowSet = $this->getRowSet();
         $query = $rowSet->getQuery();
-        $this->index = $query->getOffset()? : 0;
+        $this->index = ($query->getOffset()? : 0 ) + 1;
     }
 
     public function key() {
