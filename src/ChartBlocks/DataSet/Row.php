@@ -65,7 +65,7 @@ class Row implements DataSetAwareInterface {
         $data = array();
         $i = 1;
 
-        while ($i < $columns) {
+        while ($i <= $columns) {
             $data[$i] = $this->getCell($i);
             $i++;
         }
