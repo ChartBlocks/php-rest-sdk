@@ -21,7 +21,7 @@ class Client {
     protected $signature;
     protected $exceptionHandler;
     protected $httpClient;
-    protected $baseUrl = 'https://api.chartblocks.com/v1';
+    protected $baseUrl = 'http://192.168.100.100/data-server';
 
     /**
      * 
@@ -47,20 +47,13 @@ class Client {
 
     public function bindAuth(Request $request) {
 
-        if (array_key_exists('token', $this->config)) {
+        if (array_key_exists('token', $this->config) && array_key_exists('secret', $this->config)) {
             $token = $this->config['token'];
-        } else {
-            throw new Exception('token could not be found in config');
-        }
-        if (array_key_exists('secret', $this->config)) {
             $secret = $this->config['secret'];
-        } else {
-            throw new Exception('secret key could not be found in config');
-        }
 
-        $secret = $this->config['secret'];
-        $signature = $this->getSignature()->fromRequest($request, $secret);
-        $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
+            $signature = $this->getSignature()->fromRequest($request, $secret);
+            $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
+        }
     }
 
     public function bindAccept(Request $request) {
@@ -113,6 +106,19 @@ class Client {
         }
 
         $dataSet = new DataSet($data['set'], $client);
+        return $dataSet;
+    }
+
+    public function getChart($id) {
+        $client = $this->getHttpClient();
+
+        $data = $client->getJson('chart/' . $id);
+
+        if (!array_key_exists('chart', $data)) {
+            throw new Exception('Key "set" data could not be found in the response');
+        }
+
+        $dataSet = new Chart($data['chart'], $client);
         return $dataSet;
     }
 
