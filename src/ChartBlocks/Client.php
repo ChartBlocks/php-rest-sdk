@@ -21,7 +21,7 @@ class Client {
     protected $signature;
     protected $exceptionHandler;
     protected $httpClient;
-    protected $baseUrl = 'http://192.168.100.100/data-server';
+    protected $baseUrl = 'https://api.chartblocks.com/v1';
 
     /**
      * 
