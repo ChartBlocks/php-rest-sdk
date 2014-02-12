@@ -17,14 +17,14 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
     public function find($id) {
         $client = $this->getHttpClient();
 
-        $data = $client->getJson(trim($this->url, '/') . '/' . $id);
+        $data = $client->getJson($this->url . '/' . $id);
 
         if (!array_key_exists($this->responseKey, $data)) {
-            throw new Exception("Key $this->responseKey data could not be found in the response");
+            throw new Exception("Response key '$this->responseKey' could not be found");
         }
 
-        $dataSet = new $this->class($data[$this->responseKey], $client);
-        return $dataSet;
+        $class = new $this->class($data[$this->responseKey], $client);
+        return $class;
     }
 
 }
