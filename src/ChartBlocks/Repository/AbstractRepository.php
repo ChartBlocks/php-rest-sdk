@@ -26,7 +26,7 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         }
 
         $itemData = ($this->listResponseKey) ? $data[$this->listResponseKey] : $data;
-        
+
         $items = array();
         foreach ($itemData as $classData) {
             $items[] = $this->igniteClass($classData);
