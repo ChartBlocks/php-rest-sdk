@@ -130,7 +130,7 @@ class Client {
             if (class_exists($className)) {
                 $this->respositories[$name] = new $className($this->getHttpClient());
             } else {
-                throw new Exception("respository $name could not be found.");
+                throw new Exception("Respository $name could not be found.");
             }
         }
         return $this->respositories[$name];
