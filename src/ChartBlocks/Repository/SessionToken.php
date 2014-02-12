@@ -2,10 +2,11 @@
 
 namespace ChartBlocks\Repository;
 
-class Chart extends AbstractRepository {
+class SessionToken extends AbstractRepository {
 
-    protected $url = '/chart';
-    protected $class = '\\ChartBlocks\\Chart';
-    protected $responseKey = 'chart';
+    protected $url = '/session/token';
+    protected $class = '\\ChartBlocks\\SessionToken';
+    protected $singleResponseKey = 'chart';
+    protected $listResponseKey = 'charts';
 
 }

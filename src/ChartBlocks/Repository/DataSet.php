@@ -8,6 +8,7 @@ class DataSet extends AbstractRepository {
 
     protected $url = '/set';
     protected $class = '\\ChartBlocks\\DataSet';
-    protected $responseKey = 'set';
+    protected $singleResponseKey = 'set';
+    protected $listResponseKey = 'sets';
 
 }

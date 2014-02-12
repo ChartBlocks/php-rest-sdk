@@ -1,13 +1,14 @@
 <?php
 
-namespace ChartBlocks;
+namespace ChartBlocks\Entity;
 
 use ChartBlocks\Http\Client as HttpClient;
 use ChartBlocks\Http\ClientAwareInterface;
+use ChartBlocks\Http\ClientAwareTrait;
 
 class DataSet implements ClientAwareInterface {
 
-    use Http\ClientTrait;
+    use ClientAwareTrait;
 
     protected $id;
     protected $data;

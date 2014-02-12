@@ -1,14 +1,15 @@
 <?php
 
-namespace ChartBlocks;
+namespace ChartBlocks\Entity;
 
 use ChartBlocks\Http\Client as HttpClient;
+use ChartBlocks\Http\ClientAwareTrait;
 use ChartBlocks\Http\ClientAwareInterface;
 use ChartBlocks\Chart\Config;
 
 class Chart implements ClientAwareInterface {
 
-    use Http\ClientTrait;
+    use ClientAwareTrait;
 
     protected $id;
     protected $config;
