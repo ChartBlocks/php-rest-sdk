@@ -6,7 +6,7 @@ use ChartBlocks\DataSet\Query;
 
 class RowSet extends \ArrayObject implements DataSetAwareInterface {
 
-    use DataSetTrait;
+    use DataSetAwareTrait;
 
     protected $meta;
     protected $query;

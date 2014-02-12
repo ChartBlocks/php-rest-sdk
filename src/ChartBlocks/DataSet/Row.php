@@ -4,7 +4,7 @@ namespace ChartBlocks\DataSet;
 
 class Row implements DataSetAwareInterface {
 
-    use DataSetTrait;
+    use DataSetAwareTrait;
 
     protected $data = array();
     protected $cells = array();

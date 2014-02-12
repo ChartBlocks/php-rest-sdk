@@ -2,23 +2,25 @@
 
 namespace ChartBlocks\DataSet;
 
-trait DataSetTrait {
+use ChartBlocks\Entity\DataSet;
+
+trait DataSetAwareTrait {
 
     protected $dataSet;
 
     /**
      * 
-     * @param \ChartBlocks\DataSet $dataSet
+     * @param \ChartBlocks\Entity\DataSet $dataSet
      * @return self
      */
-    public function setDataSet(\ChartBlocks\DataSet $dataSet) {
+    public function setDataSet(DataSet $dataSet) {
         $this->dataSet = $dataSet;
         return $this;
     }
 
     /**
      * 
-     * @return \ChartBlocks\DataSet
+     * @return \ChartBlocks\Entity\DataSet
      */
     public function getDataSet() {
         return $this->dataSet;

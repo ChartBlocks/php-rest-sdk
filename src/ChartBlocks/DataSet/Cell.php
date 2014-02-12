@@ -8,7 +8,7 @@ use ChartBlocks\Http\Client;
 
 class Cell implements DataSetAwareInterface {
 
-    use DataSetTrait;
+    use DataSetAwareTrait;
 
     protected $value;
     protected $column;
