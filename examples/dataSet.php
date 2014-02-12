@@ -10,8 +10,12 @@ $dataSetId = '52f139ea054ff30f1f000004';
 
 $client = new \ChartBlocks\Client($config);
 
-$dataSet = $client->getDataSet($dataSetId);
+$dataSetRepository = $client->getRepository('dataSet');
 
+$dataSet = $dataSetRepository->find($dataSetId);
+
+var_dump($dataSet);
+exit;
 
 
 
