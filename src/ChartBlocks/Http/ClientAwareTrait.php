@@ -2,7 +2,7 @@
 
 namespace ChartBlocks\Http;
 
-trait ClientTrait {
+trait ClientAwareTrait {
 
     protected $httpClient;
 
