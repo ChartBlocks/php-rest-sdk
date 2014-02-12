@@ -23,6 +23,7 @@ class Client {
     protected $httpClient;
     protected $baseUrl;
     protected $defaultBaseUrl = 'https://api.chartblocks.com/v1';
+    protected $respositories = array();
 
     /**
      * 
@@ -45,6 +46,11 @@ class Client {
         });
     }
 
+    /**
+     * 
+     * @param \Guzzle\Http\Message\Request $request
+     * @throws Exception
+     */
     public function bindAuth(Request $request) {
         if (array_key_exists('token', $this->config)) {
             $token = $this->config['token'];
@@ -62,8 +68,14 @@ class Client {
         $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
     }
 
+    /**
+     * 
+     * @param \Guzzle\Http\Message\Request $request
+     * @return \ChartBlocks\Client
+     */
     public function bindAccept(Request $request) {
         $request->setHeader('Accept', 'application/json');
+        return $this;
     }
 
     /**
@@ -87,6 +99,10 @@ class Client {
         return $this->httpClient;
     }
 
+    /**
+     * 
+     * @return string
+     */
     public function getBaseUrl() {
         if ($this->baseUrl === null) {
             $env = getenv('CB_API_URL');
@@ -98,7 +114,7 @@ class Client {
 
     /**
      * 
-     * 
+     * @return \ChartBlocks\Signature
      */
     public function getSignature() {
         if ($this->signature === null) {
@@ -107,21 +123,17 @@ class Client {
         return $this->signature;
     }
 
-    /**
-     * 
-     * @param string $id
-     */
-    public function getDataSet($id) {
-        $client = $this->getHttpClient();
+    public function getRepository($name) {
+        if (!array_key_exists($name, $this->respositories)) {
 
-        $data = $client->getJson('set/' . $id);
-
-        if (!array_key_exists('set', $data)) {
-            throw new Exception('Key "set" data could not be found in the response');
+            $className = '\\ChartBlocks\\Repository\\' . ucfirst($name);
+            if (class_exists($className)) {
+                $this->respositories[$name] = new $className($this->getHttpClient());
+            } else {
+                throw new Exception("respository $name could not be found.");
+            }
         }
-
-        $dataSet = new DataSet($data['set'], $client);
-        return $dataSet;
+        return $this->respositories[$name];
     }
 
 }
