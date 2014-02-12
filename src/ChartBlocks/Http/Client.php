@@ -9,13 +9,25 @@ class Client extends HttpClient {
     protected $exceptionHandler;
 
     public function getJson($uri = null) {
-        $request = $this->get($uri);
+        $path = ltrim($uri, '/');
+        
+        $request = $this->get($path);
         $response = $this->sendRequest($request);
         return $response->json();
     }
 
     public function putJson($uri = null, $data = array()) {
-        $request = $this->put($uri, null, json_encode($data));
+        $path = ltrim($uri, '/');
+        
+        $request = $this->put($path, null, json_encode($data));
+        $response = $this->sendRequest($request);
+        return $response->json();
+    }
+    
+    public function postJson($uri = null, $data = array()) {
+        $path = ltrim($uri, '/');
+        
+        $request = $this->post($path, null, json_encode($data));
         $response = $this->sendRequest($request);
         return $response->json();
     }

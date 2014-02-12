@@ -17,16 +17,19 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         $this->setHttpClient($client);
     }
 
+    public function create($data = array()) {
+        $client = $this->getHttpClient();
+        $response = $client->postJson($this->url, $data);
+
+        $classData = $this->extractSingleKeyData($response);
+        return $this->igniteClass($classData);
+    }
+
     public function find($query) {
         $client = $this->getHttpClient();
         $data = $client->getJson($this->url);
 
-        if ($this->listResponseKey && !array_key_exists($this->listResponseKey, $data)) {
-            throw new Exception('Invalid response, missing field ' . $this->listResponseKey);
-        }
-
-        $itemData = ($this->listResponseKey) ? $data[$this->listResponseKey] : $data;
-
+        $itemData = $this->extractListKeyData($data);
         $items = array();
         foreach ($itemData as $classData) {
             $items[] = $this->igniteClass($classData);
@@ -39,12 +42,24 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         $client = $this->getHttpClient();
         $data = $client->getJson($this->url . '/' . $id);
 
+        $classData = $this->extractSingleKeyData($data);
+        return $this->igniteClass($classData);
+    }
+
+    protected function extractSingleKeyData(array $data) {
         if ($this->singleResponseKey && !array_key_exists($this->singleResponseKey, $data)) {
             throw new Exception('Invalid response, missing field ' . $this->singleResponseKey);
         }
 
-        $classData = ($this->singleResponseKey) ? $data[$this->singleResponseKey] : $data;
-        return $this->igniteClass($classData);
+        return ($this->singleResponseKey) ? $data[$this->singleResponseKey] : $data;
+    }
+
+    protected function extractListKeyData(array $data) {
+        if ($this->listResponseKey && !array_key_exists($this->listResponseKey, $data)) {
+            throw new Exception('Invalid response, missing field ' . $this->listResponseKey);
+        }
+
+        return ($this->listResponseKey) ? $data[$this->listResponseKey] : $data;
     }
 
     protected function igniteClass($data) {
