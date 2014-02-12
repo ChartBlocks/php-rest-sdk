@@ -21,8 +21,8 @@ class Client {
     protected $signature;
     protected $exceptionHandler;
     protected $httpClient;
-    protected $baseUrl = 'https://api.chartblocks.com/v1';
-    protected $respositories = array();
+    protected $baseUrl;
+    protected $defaultBaseUrl = 'https://api.chartblocks.com/v1';
 
     /**
      * 
@@ -30,7 +30,6 @@ class Client {
      */
     public function __construct($config = array()) {
         $this->setConfig($config);
-
         $this->bindEvents();
     }
 
@@ -38,23 +37,29 @@ class Client {
         $that = $this;
         $client = $this->getHttpClient();
         $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-                    $that->bindAuth($event['request']);
-                });
+            $that->bindAuth($event['request']);
+        });
 
         $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-                    $that->bindAccept($event['request']);
-                });
+            $that->bindAccept($event['request']);
+        });
     }
 
     public function bindAuth(Request $request) {
-
-        if (array_key_exists('token', $this->config) && array_key_exists('secret', $this->config)) {
+        if (array_key_exists('token', $this->config)) {
             $token = $this->config['token'];
-            $secret = $this->config['secret'];
-
-            $signature = $this->getSignature()->fromRequest($request, $secret);
-            $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
+        } else {
+            throw new Exception('token could not be found in config');
         }
+        if (array_key_exists('secret', $this->config)) {
+            $secret = $this->config['secret'];
+        } else {
+            throw new Exception('secret key could not be found in config');
+        }
+
+        $secret = $this->config['secret'];
+        $signature = $this->getSignature()->fromRequest($request, $secret);
+        $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
     }
 
     public function bindAccept(Request $request) {
@@ -77,9 +82,18 @@ class Client {
      */
     public function getHttpClient() {
         if ($this->httpClient === null) {
-            $this->httpClient = new Http\Client($this->baseUrl, array());
+            $this->httpClient = new Http\Client($this->getBaseUrl(), array());
         }
         return $this->httpClient;
+    }
+
+    public function getBaseUrl() {
+        if ($this->baseUrl === null) {
+            $env = getenv('CB_API_URL');
+            $this->baseUrl = empty($env) ? $this->defaultBaseUrl : $env;
+        }
+
+        return $this->baseUrl;
     }
 
     /**
@@ -93,17 +107,21 @@ class Client {
         return $this->signature;
     }
 
-    public function getRepository($name) {
-        if (!array_key_exists($name, $this->respositories)) {
+    /**
+     * 
+     * @param string $id
+     */
+    public function getDataSet($id) {
+        $client = $this->getHttpClient();
 
-            $className = '\\ChartBlocks\\Repository\\' . ucfirst($name);
-            if (class_exists($className)) {
-                $this->respositories[$name] = new $className($this->getHttpClient());
-            } else {
-                throw new Exception("respository $name could not be found.");
-            }
+        $data = $client->getJson('set/' . $id);
+
+        if (!array_key_exists('set', $data)) {
+            throw new Exception('Key "set" data could not be found in the response');
         }
-        return $this->respositories[$name];
+
+        $dataSet = new DataSet($data['set'], $client);
+        return $dataSet;
     }
 
 }
