@@ -35,7 +35,7 @@ class ExceptionHandler {
      */
     protected function handleBadResponse($exception) {
         $response = $exception->getResponse();
-
+        $newException = null;
         $code = $response->getStatusCode();
 
         if ($code == '400') {
@@ -46,17 +46,17 @@ class ExceptionHandler {
                 exit(1);
             }
         } else if ($code == '401') {
-            $exception = new Exception\UnauthorizedException($code . ' : ' . $response->getReasonPhrase());
+            $newException = new Exception\UnauthorizedException($code . ' : ' . $response->getReasonPhrase());
         } else if ($code == '404') {
-            $exception = new Exception\NotFoundException($code . ' : ' . $response->getReasonPhrase());
+            $newException = new Exception\NotFoundException($code . ' : ' . $response->getReasonPhrase());
         } else if ($code == '500') {
-            $exception = new Exception\InternalServerErrorException($code . ' : ' . $response->getReasonPhrase());
-        } else if (!$exception) {
-            $exception = new Exception\BadResponseException($code . ' : ' . $response->getReasonPhrase());
+            $newException = new Exception\InternalServerErrorException($code . ' : ' . $response->getReasonPhrase());
+        } else if (!$newException) {
+            $newException = new Exception\BadResponseException($code . ' : ' . $response->getReasonPhrase());
         }
 
-        $exception->setResponse($response);
-        throw $exception;
+        $newException->setResponse($response);
+        throw $newException;
     }
 
 }

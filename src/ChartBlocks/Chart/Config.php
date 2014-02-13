@@ -8,7 +8,7 @@ class Config implements ChartAwareInterface {
 
     protected $data;
 
-    public function __construct($data) {
+    public function __construct($data = array()) {
         $this->data = $data;
     }
 
@@ -20,7 +20,7 @@ class Config implements ChartAwareInterface {
                 return $this->data[$name];
             } else if (is_array($this->data[$name])) {
 
-                return new self($this->data[$name]);
+                return $this->data[$name] = new self($this->data[$name]);
             }
             return $this->data[$name];
         }

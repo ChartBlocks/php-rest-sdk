@@ -38,12 +38,12 @@ class Client {
         $that = $this;
         $client = $this->getHttpClient();
         $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-            $that->bindAuth($event['request']);
-        });
+                    $that->bindAuth($event['request']);
+                });
 
         $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-            $that->bindAccept($event['request']);
-        });
+                    $that->bindAccept($event['request']);
+                });
     }
 
     /**
@@ -55,8 +55,10 @@ class Client {
         $token = $this->getAuthToken();
         $secret = $this->getAuthSecret();
 
-        $signature = $this->getSignature()->fromRequest($request, $secret);
-        $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
+        if ($token && $secret) {
+            $signature = $this->getSignature()->fromRequest($request, $secret);
+            $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
+        }
     }
 
     /**
@@ -73,8 +75,6 @@ class Client {
                 return $env;
             }
         }
-
-        throw new Exception('No auth token set');
     }
 
     /**
@@ -91,8 +91,6 @@ class Client {
                 return $env;
             }
         }
-
-        throw new Exception('No auth secret set');
     }
 
     /**

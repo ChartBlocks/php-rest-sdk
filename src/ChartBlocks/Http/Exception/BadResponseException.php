@@ -1,6 +1,6 @@
 <?php
 
-namespace ChartBlocks\Exception\Http;
+namespace ChartBlocks\Http\Exception;
 
 use Guzzle\Http\Exception\BadResponseException as BRException;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace ChartBlocks\Exception\Http;
+namespace ChartBlocks\Http\Exception;
 
 class InternalServerErrorException extends BadResponseException {
     
