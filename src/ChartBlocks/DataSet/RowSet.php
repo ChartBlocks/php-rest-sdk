@@ -2,6 +2,7 @@
 
 namespace ChartBlocks\DataSet;
 
+use ChartBlocks\Entity\DataSet;
 use ChartBlocks\DataSet\Query;
 
 class RowSet extends \ArrayObject implements DataSetAwareInterface {
@@ -13,7 +14,7 @@ class RowSet extends \ArrayObject implements DataSetAwareInterface {
     protected $rows = array();
     protected $maxLoad = 100;
 
-    public function __construct(Query $query = null, \ChartBlocks\DataSet $dataSet = null) {
+    public function __construct(DataSet $dataSet = null, Query $query = null) {
         if ($dataSet) {
             $this->setDataSet($dataSet);
         }
@@ -79,7 +80,7 @@ class RowSet extends \ArrayObject implements DataSetAwareInterface {
         $dataSet = $this->getDataSet();
         $setMeta = $dataSet->getMeta();
         $versionMeta = $this->getVersionMeta();
-        $client = $dataSet->getHttpClient();
+        $client = $dataSet->getRepository()->getHttpClient();
 
         $offset = $index - 1;
 

@@ -2,9 +2,7 @@
 
 namespace ChartBlocks\DataSet;
 
-use ChartBlocks\Http\ClientAwareInterface;
-use ChartBlocks\Http\ClientTrait;
-use ChartBlocks\Http\Client;
+use ChartBlocks\Entity\DataSet;
 
 class Cell implements DataSetAwareInterface {
 
@@ -16,7 +14,7 @@ class Cell implements DataSetAwareInterface {
     protected $id;
     protected $hasChanged = false;
 
-    public function __construct(array $data, \ChartBlocks\DataSet $dataSet) {
+    public function __construct(DataSet $dataSet, array $data) {
         $this->setDataSet($dataSet);
         $this->setConfig($data);
     }
@@ -78,7 +76,7 @@ class Cell implements DataSetAwareInterface {
 
     public function save() {
         $dataSet = $this->getDataSet();
-        $client = $dataSet->getHttpClient();
+        $client = $dataSet->getRespository()->getHttpClient();
         $id = $dataSet->getId();
         $row = $this->getRow();
 

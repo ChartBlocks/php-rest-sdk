@@ -25,9 +25,9 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         return $this->igniteClass($classData);
     }
 
-    public function find($query) {
+    public function find($query = array()) {
         $client = $this->getHttpClient();
-        $data = $client->getJson($this->url);
+        $data = $client->getJson($this->url, $query);
 
         $itemData = $this->extractListKeyData($data);
         $items = array();
@@ -68,7 +68,7 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
             throw new Exception('Invalid entity class');
         }
 
-        return new $class($data, $this->getHttpClient());
+        return new $class($this, $data);
     }
 
 }

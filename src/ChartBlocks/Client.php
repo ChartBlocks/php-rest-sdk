@@ -52,20 +52,47 @@ class Client {
      * @throws Exception
      */
     public function bindAuth(Request $request) {
-        if (array_key_exists('token', $this->config)) {
-            $token = $this->config['token'];
-        } else {
-            throw new Exception('token could not be found in config');
-        }
-        if (array_key_exists('secret', $this->config)) {
-            $secret = $this->config['secret'];
-        } else {
-            throw new Exception('secret key could not be found in config');
-        }
+        $token = $this->getAuthToken();
+        $secret = $this->getAuthSecret();
 
-        $secret = $this->config['secret'];
         $signature = $this->getSignature()->fromRequest($request, $secret);
         $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
+    }
+
+    /**
+     * 
+     * @return string
+     * @throws Exception
+     */
+    public function getAuthToken() {
+        if (array_key_exists('token', $this->config)) {
+            return $this->config['token'];
+        } else {
+            $env = getenv('CB_AUTH_TOKEN');
+            if (!empty($env)) {
+                return $env;
+            }
+        }
+
+        throw new Exception('No auth token set');
+    }
+
+    /**
+     * 
+     * @return string
+     * @throws Exception
+     */
+    public function getAuthSecret() {
+        if (array_key_exists('secret', $this->config)) {
+            return $this->config['secret'];
+        } else {
+            $env = getenv('CB_AUTH_SECRET');
+            if (!empty($env)) {
+                return $env;
+            }
+        }
+
+        throw new Exception('No auth secret set');
     }
 
     /**
@@ -123,9 +150,14 @@ class Client {
         return $this->signature;
     }
 
+    /**
+     * 
+     * @param string $name
+     * @return \ChartBlocks\Entity\EntityInterface
+     * @throws Exception
+     */
     public function getRepository($name) {
         if (!array_key_exists($name, $this->respositories)) {
-
             $className = '\\ChartBlocks\\Repository\\' . ucfirst($name);
             if (class_exists($className)) {
                 $this->respositories[$name] = new $className($this->getHttpClient());

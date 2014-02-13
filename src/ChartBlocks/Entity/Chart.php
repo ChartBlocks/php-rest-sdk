@@ -2,31 +2,15 @@
 
 namespace ChartBlocks\Entity;
 
-use ChartBlocks\Http\Client as HttpClient;
-use ChartBlocks\Http\ClientAwareTrait;
-use ChartBlocks\Http\ClientAwareInterface;
 use ChartBlocks\Chart\Config;
 
-class Chart implements ClientAwareInterface {
+class Chart extends AbstractEntity {
 
-    use ClientAwareTrait;
-
-    protected $id;
     protected $config;
-
-    public function __construct(array $data, HttpClient $httpClient = null) {
-        if ($httpClient) {
-            $this->setHttpClient($httpClient);
-        }
-
-        if (array_key_exists('config', $data)) {
-            $this->setConfig($data['config']);
-        }
-    }
 
     public function getConfig() {
         if ($this->config === null) {
-            $this->config = new Config();
+            $this->setConfig(new Config());
         }
         return $this->config;
     }
