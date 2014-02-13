@@ -38,17 +38,9 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         return $items;
     }
 
-    public function load($id, $query = array()) {
+    public function findById($id, $query = array()) {
         $client = $this->getHttpClient();
         $data = $client->getJson($this->url . '/' . $id, $query);
-
-        $classData = $this->extractSingleKeyData($data);
-        return $this->igniteClass($classData);
-    }
-
-    public function findById($id) {
-        $client = $this->getHttpClient();
-        $data = $client->getJson($this->url . '/' . $id);
 
         $classData = $this->extractSingleKeyData($data);
         return $this->igniteClass($classData);
