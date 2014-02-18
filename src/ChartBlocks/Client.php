@@ -151,7 +151,7 @@ class Client {
     /**
      * 
      * @param string $name
-     * @return \ChartBlocks\Entity\EntityInterface
+     * @return \ChartBlocks\Repository\RepositoryInterface
      * @throws Exception
      */
     public function getRepository($name) {

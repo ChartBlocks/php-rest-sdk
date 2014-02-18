@@ -5,7 +5,7 @@ namespace ChartBlocks\DataSet;
 use ChartBlocks\Entity\DataSet;
 use ChartBlocks\DataSet\Query;
 
-class RowSet extends \ArrayObject implements DataSetAwareInterface {
+class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAwareInterface {
 
     use DataSetAwareTrait;
 
@@ -14,20 +14,30 @@ class RowSet extends \ArrayObject implements DataSetAwareInterface {
     protected $rows = array();
     protected $maxLoad = 100;
 
-    public function __construct(DataSet $dataSet = null, Query $query = null) {
-        if ($dataSet) {
-            $this->setDataSet($dataSet);
-        }
-        if ($query) {
-            $this->setQuery($query);
-        }
+    /**
+     * 
+     * @param \ChartBlocks\Entity\DataSet $dataSet
+     * @param \ChartBlocks\DataSet\Query $query
+     */
+    public function __construct(DataSet $dataSet, Query $query) {
+        $this->setDataSet($dataSet);
+        $this->setQuery($query);
     }
 
-    public function setQuery($query) {
+    /**
+     * 
+     * @param \ChartBlocks\DataSet\Query $query
+     * @return \ChartBlocks\DataSet\RowSetCursor
+     */
+    public function setQuery(Query $query) {
         $this->query = $query;
         return $this;
     }
 
+    /**
+     * 
+     * @return \ChartBlocks\DataSet\Query
+     */
     public function getQuery() {
         if ($this->query === null) {
             $this->query = new Query();
@@ -35,35 +45,55 @@ class RowSet extends \ArrayObject implements DataSetAwareInterface {
         return $this->query;
     }
 
+    /**
+     * 
+     * @return \ChartBlocks\DataSet\RowSetIterator
+     */
     public function getIterator() {
         $iterator = new \ChartBlocks\DataSet\RowSetIterator($this);
         return $iterator;
     }
 
-    public function setRow(Row $row, $index = null) {
-        if ($index !== null) {
-            $this->rows[$index] = $row;
-        } else {
-            $this->rows[] = $row;
-        }
+    /**
+     * 
+     * @param \ChartBlocks\DataSet\Row $row
+     * @return \ChartBlocks\DataSet\RowSetCursor
+     */
+    public function addRow(Row $row) {
+        $this->rows[$row->getRow()] = $row;
         return $this;
     }
 
+    /**
+     * 
+     * @param int $index
+     * @return \ChartBlocks\DataSet\Row
+     * @throws Exception
+     */
     public function getRow($index) {
-        if (array_key_exists($index, $this->rows)) {
+        if ($this->isRowLoaded($index)) {
             return $this->rows[$index];
         }
+
         if ($this->isValid($index)) {
-            $this->load($index);
+            $this->loadRowChunk($index);
         }
-        if (array_key_exists($index, $this->rows)) {
+
+        if ($this->isRowLoaded($index)) {
             return $this->rows[$index];
         } else {
             throw new Exception('Could not load row');
         }
     }
 
-    public function isValid($index) {
+    protected function isRowLoaded($index) {
+        if (array_key_exists($index, $this->rows)) {
+            return true;
+        }
+        return false;
+    }
+
+    protected function isValid($index) {
         $query = $this->getQuery();
         $versionMeta = $this->getVersionMeta();
 
@@ -73,42 +103,44 @@ class RowSet extends \ArrayObject implements DataSetAwareInterface {
         if (($index < $max || !$limit) && ($index < $versionMeta['rows'])) {
             return true;
         }
+
         return false;
     }
 
-    public function load($index = 1) {
+    public function loadRowChunk($index = 1) {
         $dataSet = $this->getDataSet();
-        $setMeta = $dataSet->getMeta();
         $versionMeta = $this->getVersionMeta();
-        $client = $dataSet->getRepository()->getHttpClient();
 
         $offset = $index - 1;
-
 
         $query = $this->getQuery();
         $maxLoad = ($query->getLimit() > $this->maxLoad || !$query->getLimit()) ? $this->maxLoad : $query->getLimit();
         $limit = $maxLoad > ($versionMeta['rows'] - $offset) ? $versionMeta['rows'] - $offset : $maxLoad;
 
+        $uri = 'data/' . $dataSet->getId();
+        $params = array(
+            'offset' => $offset,
+            'limit' => $limit,
+            'version' => $versionMeta['version']
+        );
 
-
-        $uri = 'data/' . $setMeta['id'] . '?offset=' . $offset . '&limit=' . $limit . '&version=' . $versionMeta['version'];
-
-        $rows = $client->getJson($uri);
+        $client = $dataSet->getRepository()->getHttpClient();
+        $rows = $client->getJson($uri, $params);
         $i = $offset;
 
         while ($i < $limit + $offset) {
-            $meta = array('id' => $setMeta['id'], 'row' => $i, 'columns' => $versionMeta['columns']);
-            if (array_key_exists($i, $rows['data'])) {
-                $this->setRow(new Row(array_merge($rows['data'][$i], $meta), $dataSet), $i);
-            } else {
+            $row = array(
+                'row' => $i,
+                'columns' => $versionMeta['columns'],
+                'values' => array_key_exists($i, $rows['data']) ? $rows['data'][$i] : array()
+            );
 
-                $this->setRow(new Row($meta, $dataSet), $i);
-            }
+            $this->addRow(new Row($dataSet, $row));
             $i++;
         }
     }
 
-    public function getVersionMeta() {
+    protected function getVersionMeta() {
         $version = $this->getQuery()->getVersion();
         $dataSet = $this->getDataSet();
         $meta = $dataSet->getMeta();
@@ -129,13 +161,6 @@ class RowSet extends \ArrayObject implements DataSetAwareInterface {
             }
         }
 
-        return false;
-    }
-
-    public function isRowLoaded($index) {
-        if (array_key_exists($index, $this->rows)) {
-            return true;
-        }
         return false;
     }
 

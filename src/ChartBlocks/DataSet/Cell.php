@@ -16,31 +16,26 @@ class Cell implements DataSetAwareInterface {
 
     public function __construct(DataSet $dataSet, array $data) {
         $this->setDataSet($dataSet);
-        $this->setConfig($data);
+        $this->setData($data);
     }
 
-    public function setConfig(array $data) {
-
+    public function setData(array $data) {
         if (array_key_exists('value', $data)) {
-            $this->setValue($data['value'], true);
+            $this->setValue($data['value']);
         }
 
         if (array_key_exists('column', $data)) {
             $this->setColumn($data['column']);
         }
+
         if (array_key_exists('row', $data)) {
             $this->setRow($data['row']);
         }
-        if (array_key_exists('new', $data)) {
-            $this->isNew = (bool) $data['new'];
-        }
     }
 
-    public function setValue($value, $silent = false) {
-        if (!$silent) {
-            $this->hasChanged = true;
-        }
+    public function setValue($value) {
         $this->value = $value;
+        $this->hasChanged = true;
         return $this;
     }
 
@@ -49,11 +44,15 @@ class Cell implements DataSetAwareInterface {
     }
 
     public function getColumn() {
+        if (!$this->column) {
+            throw new Exception('Column not set');
+        }
         return $this->column;
     }
 
     public function setColumn($column) {
         $this->column = (int) $column;
+        $this->hasChanged = true;
         return $this;
     }
 
@@ -63,39 +62,12 @@ class Cell implements DataSetAwareInterface {
 
     public function setRow($row) {
         $this->row = $row;
+        $this->hasChanged = true;
         return $this;
-    }
-
-    public function isNew() {
-        return $this->isNew;
     }
 
     public function hasChanged() {
         return $this->hasChanged;
-    }
-
-    public function save() {
-        $dataSet = $this->getDataSet();
-        $client = $dataSet->getRespository()->getHttpClient();
-        $id = $dataSet->getId();
-        $row = $this->getRow();
-
-        if ($row === null) {
-            $url = 'data/append/' . $id;
-            $row = 0;
-        } else {
-            $url = 'data/' . $id;
-        }
-        $data = array(
-            'data' => array(
-                $row? : 0 => array(
-                    $this->getColumn() => $this->getValue()
-                )
-            )
-        );
-
-        $json = $client->putJson($url, $data);
-        return !!$json['success'];
     }
 
 }

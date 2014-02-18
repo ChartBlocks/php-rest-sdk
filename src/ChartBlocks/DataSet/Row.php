@@ -13,14 +13,14 @@ class Row implements DataSetAwareInterface {
     protected $id;
     protected $columnCount = 0;
     protected $row;
+    protected $hasChanged = false;
 
     public function __construct(DataSet $dataSet, array $data) {
         $this->setDataSet($dataSet);
-        $this->setConfig($data);
+        $this->setData($data);
     }
 
-    public function setConfig(array $data) {
-
+    public function setData(array $data) {
         if (array_key_exists('row', $data)) {
             $this->setRow($data['row']);
         }
@@ -40,15 +40,17 @@ class Row implements DataSetAwareInterface {
 
     public function setCell($index, $cell) {
         if (!($cell instanceof Cell)) {
-
             if (!is_array($cell)) {
                 $cell = array('value' => $cell);
             }
+
             $cell['column'] = $index;
             $cell['row'] = $this->getRow();
-            $cell = new Cell($cell, $this->getDataSet());
+            $cell = new Cell($this->getDataSet(), $cell);
         }
+
         $this->cells[$index] = $cell;
+        $this->hasChanged = true;
         return $this;
     }
 
@@ -62,65 +64,66 @@ class Row implements DataSetAwareInterface {
     }
 
     public function getCells() {
-        $columns = $this->getColumnCount();
-
-        $data = array();
-        $i = 1;
-
-        while ($i <= $columns) {
-            $data[$i] = $this->getCell($i);
-            $i++;
-        }
-        $this->cells = $data;
         return $this->cells;
     }
 
     public function getCell($index) {
         if ($index > 0) {
-            if (array_key_exists($index, $this->cells)) {
-                return $this->cells[$index];
+            if (!array_key_exists($index, $this->cells)) {
+                $this->cells[$index] = new Cell(array(
+                    'column' => $index,
+                    'row' => $this->getRow()
+                        ), $this->getDataSet());
             }
 
-            $cell = new Cell(array(
-                'column' => $index,
-                'row' => $this->getRow()
-                    ), $this->getDataSet());
-            $this->setCell($index, $cell);
-            return $cell;
+            return $this->cells[$index];
         }
+
         return null;
     }
 
-    public function save() {
+    public function hasChanged() {
+        if ($this->hasChanged) {
+            return true;
+        }
 
+        foreach ($this->getCells() as $cell) {
+            if ($cell->hasChanged()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function save() {
         $dataSet = $this->getDataSet();
-        $client = $dataSet->getHttpClient();
+        $client = $dataSet->getRepository()->getHttpClient();
         $id = $dataSet->getId();
         $row = $this->getRow();
 
-
         if ($row === null) {
             $json = $client->putJson('data/append/' . $id, array(
-                'data' => $this->toArray()
+                'data' => array($this->toArray())
             ));
             return !!$json['success'];
         } else {
-            //    $client->putJson('/data/' . $id);
-            //    return !!$json['success'];
+            $json = $client->putJson('data/' . $id, array(
+                'data' => array($row => $this->toArray())
+            ));
+            return !!$json['success'];
         }
     }
 
-    public function toArray() {
+    public function toArray($changesOnly = false) {
         $data = array();
         foreach ($this->getCells() as $cell) {
-
-            if ($cell->hasChanged()) {
-                $data = array($cell->getColumn() => $cell->getValue()) + $data;
+            if (!$changesOnly || $cell->hasChanged()) {
+                $data[$cell->getColumn()] = $cell->getValue();
             }
         }
-        return array(
-            $this->getRow()? : 0 => $data
-        );
+
+        return $data;
     }
 
     public function getId() {
@@ -153,17 +156,17 @@ class Row implements DataSetAwareInterface {
     }
 
     public function columnLetterToNumber($pString) {
-        //	Using a lookup cache adds a slight memory overhead, but boosts speed
-        //	caching using a static within the method is faster than a class static,
-        //		though it's additional memory overhead
+//	Using a lookup cache adds a slight memory overhead, but boosts speed
+//	caching using a static within the method is faster than a class static,
+//		though it's additional memory overhead
         static $_indexCache = array();
 
         if (isset($_indexCache[$pString]))
             return $_indexCache[$pString];
 
-        //	It's surprising how costly the strtoupper() and ord() calls actually are, so we use a lookup array rather than use ord()
-        //		and make it case insensitive to get rid of the strtoupper() as well. Because it's a static, there's no significant
-        //		memory overhead either
+//	It's surprising how costly the strtoupper() and ord() calls actually are, so we use a lookup array rather than use ord()
+//		and make it case insensitive to get rid of the strtoupper() as well. Because it's a static, there's no significant
+//		memory overhead either
         static $_columnLookup = array(
             'A' => 1, 'B' => 2, 'C' => 3, 'D' => 4, 'E' => 5, 'F' => 6, 'G' => 7, 'H' => 8, 'I' => 9, 'J' => 10, 'K' => 11, 'L' => 12, 'M' => 13,
             'N' => 14, 'O' => 15, 'P' => 16, 'Q' => 17, 'R' => 18, 'S' => 19, 'T' => 20, 'U' => 21, 'V' => 22, 'W' => 23, 'X' => 24, 'Y' => 25, 'Z' => 26,
@@ -171,8 +174,8 @@ class Row implements DataSetAwareInterface {
             'n' => 14, 'o' => 15, 'p' => 16, 'q' => 17, 'r' => 18, 's' => 19, 't' => 20, 'u' => 21, 'v' => 22, 'w' => 23, 'x' => 24, 'y' => 25, 'z' => 26
         );
 
-        //	We also use the language construct isset() rather than the more costly strlen() function to match the length of $pString
-        //		for improved performance
+//	We also use the language construct isset() rather than the more costly strlen() function to match the length of $pString
+//		for improved performance
         if (isset($pString{0})) {
             if (!isset($pString{1})) {
                 $_indexCache[$pString] = $_columnLookup[$pString];
