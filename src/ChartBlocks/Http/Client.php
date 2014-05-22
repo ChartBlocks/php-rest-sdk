@@ -37,6 +37,26 @@ class Client extends HttpClient {
         return $response->json();
     }
 
+    public function deleteJson($uri = null, $data = array()) {
+        $path = ltrim($uri, '/');
+
+        $request = $this->delete($path, null, json_encode($data));
+        $response = $this->sendRequest($request);
+        return $response->json();
+    }
+
+    public function postFile($uri = null, $file = null) {
+        $path = ltrim($uri, '/');
+
+        $request = $this->post($path);
+
+        if ($file) {
+            $request->addPostFile('upload', $file);
+        }
+        $response = $this->sendRequest($request);
+        return $response->json();
+    }
+
     public function sendRequest($request) {
         try {
             $response = $request->send();

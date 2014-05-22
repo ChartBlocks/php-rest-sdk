@@ -5,10 +5,9 @@ namespace ChartBlocks\DataSet;
 class RowSetIterator extends \ArrayIterator {
 
     protected $index = 1;
-    protected $rows = array();
     protected $rowSet;
 
-    public function __construct(RowSet $rowSet) {
+    public function __construct(RowSetCursor $rowSet) {
         $this->setRowSet($rowSet);
         $this->rewind();
     }
@@ -36,7 +35,7 @@ class RowSetIterator extends \ArrayIterator {
         $rowSet = $this->getRowSet();
 
         if (!$rowSet->isRowLoaded($this->index)) {
-            $rowSet->load($this->index);
+            $rowSet->loadRowChunk($this->index);
         }
         return $rowSet->getRow($this->index);
     }

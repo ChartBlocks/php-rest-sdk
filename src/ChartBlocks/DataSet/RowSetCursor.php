@@ -7,12 +7,11 @@ use ChartBlocks\DataSet\Query;
 
 class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAwareInterface {
 
-    use DataSetAwareTrait;
-
+    protected $dataSet;
     protected $meta;
     protected $query;
     protected $rows = array();
-    protected $maxLoad = 100;
+    protected $maxLoad = 50;
 
     /**
      * 
@@ -60,7 +59,7 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
      * @return \ChartBlocks\DataSet\RowSetCursor
      */
     public function addRow(Row $row) {
-        $this->rows[$row->getRow()] = $row;
+        $this->rows[$row->getRowNumber()] = $row;
         return $this;
     }
 
@@ -86,74 +85,78 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
         }
     }
 
-    protected function isRowLoaded($index) {
+    public function isRowLoaded($index) {
         if (array_key_exists($index, $this->rows)) {
             return true;
         }
         return false;
     }
 
-    protected function isValid($index) {
+    public function isValid($index) {
         $query = $this->getQuery();
         $versionMeta = $this->getVersionMeta();
 
         $limit = $query->getLimit();
-        $max = $limit + ($query->getOffset()? : 0) + 1;
+        $max = $limit + ($query->getOffset()? : 0);
 
-        if (($index < $max || !$limit) && ($index < $versionMeta['rows'])) {
-            return true;
-        }
-
-        return false;
+        return ($index <= $max || !$limit) && ($index <= $versionMeta['rows']);
     }
 
     public function loadRowChunk($index = 1) {
         $dataSet = $this->getDataSet();
         $versionMeta = $this->getVersionMeta();
 
+        $params = $this->getQueryParams($index);
+
+        $uri = 'data/' . $dataSet->getId();
+
+        $client = $dataSet->getRepository()->getHttpClient();
+        $rows = $client->getJson($uri, $params);
+
+        $i = $index;
+
+
+        while ($i <= $params['limit'] + $params['offset']) {
+            $row = array(
+                'rowNumber' => $i,
+                'columnCount' => $versionMeta['columns'],
+                'cells' => array_key_exists($i, $rows['data']) && array_key_exists('cells', $rows['data'][$i]) ? $rows['data'][$i]['cells'] : array()
+            );
+            $this->addRow(new Row($row));
+            $i++;
+        }
+    }
+
+    protected function getQueryParams($index) {
+        $versionMeta = $this->getVersionMeta();
         $offset = $index - 1;
 
         $query = $this->getQuery();
         $maxLoad = ($query->getLimit() > $this->maxLoad || !$query->getLimit()) ? $this->maxLoad : $query->getLimit();
         $limit = $maxLoad > ($versionMeta['rows'] - $offset) ? $versionMeta['rows'] - $offset : $maxLoad;
 
-        $uri = 'data/' . $dataSet->getId();
         $params = array(
             'offset' => $offset,
             'limit' => $limit,
             'version' => $versionMeta['version']
         );
-
-        $client = $dataSet->getRepository()->getHttpClient();
-        $rows = $client->getJson($uri, $params);
-        $i = $offset;
-
-        while ($i < $limit + $offset) {
-            $row = array(
-                'row' => $i,
-                'columns' => $versionMeta['columns'],
-                'values' => array_key_exists($i, $rows['data']) ? $rows['data'][$i] : array()
-            );
-
-            $this->addRow(new Row($dataSet, $row));
-            $i++;
-        }
+        return $params;
     }
 
     protected function getVersionMeta() {
         $version = $this->getQuery()->getVersion();
         $dataSet = $this->getDataSet();
-        $meta = $dataSet->getMeta();
+        $data = $dataSet->getData();
 
         if ($version === false) {
-            $version = $meta['latestVersionNumber'];
+            $version = $data['latestVersionNumber'];
         }
 
-        if ($version > $meta['latestVersionNumber']) {
+        if ($version > $data['latestVersionNumber']) {
             throw new Exception('Version requested is greater than the latest version.');
         }
 
-        $versionsMeta = $meta['versions'];
+        $versionsMeta = $data['versions'];
 
         foreach ($versionsMeta as $versionMeta) {
             if ($versionMeta['version'] == $version) {
@@ -162,6 +165,24 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
         }
 
         return false;
+    }
+
+    /**
+     * 
+     * @param \ChartBlocks\Entity\DataSet $dataSet
+     * @return self
+     */
+    public function setDataSet(DataSet $dataSet) {
+        $this->dataSet = $dataSet;
+        return $this;
+    }
+
+    /**
+     * 
+     * @return \ChartBlocks\Entity\DataSet
+     */
+    public function getDataSet() {
+        return $this->dataSet;
     }
 
 }

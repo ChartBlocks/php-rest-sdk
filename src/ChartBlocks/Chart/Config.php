@@ -4,8 +4,7 @@ namespace ChartBlocks\Chart;
 
 class Config implements ChartAwareInterface {
 
-    use ChartTrait;
-
+    protected $chart;
     protected $data;
 
     public function __construct($data = array()) {
@@ -24,6 +23,15 @@ class Config implements ChartAwareInterface {
             }
             return $this->data[$name];
         }
+    }
+
+    public function getChart() {
+        return $this->chart;
+    }
+
+    public function setChart(Chart $chart) {
+        $this->chart = $chart;
+        return $this;
     }
 
 }

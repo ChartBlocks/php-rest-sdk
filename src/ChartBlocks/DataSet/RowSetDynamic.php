@@ -6,8 +6,7 @@ use ChartBlocks\Entity\DataSet;
 
 class RowSetDynamic implements RowSetInterface, DataSetAwareInterface {
 
-    use DataSetAwareTrait;
-
+    protected $dataSet;
     protected $rows = array();
 
     public function __construct(DataSet $dataSet) {
@@ -101,6 +100,24 @@ class RowSetDynamic implements RowSetInterface, DataSetAwareInterface {
         ));
 
         return $this;
+    }
+
+    /**
+     * 
+     * @param \ChartBlocks\Entity\DataSet $dataSet
+     * @return self
+     */
+    public function setDataSet(DataSet $dataSet) {
+        $this->dataSet = $dataSet;
+        return $this;
+    }
+
+    /**
+     * 
+     * @return \ChartBlocks\Entity\DataSet
+     */
+    public function getDataSet() {
+        return $this->dataSet;
     }
 
 }

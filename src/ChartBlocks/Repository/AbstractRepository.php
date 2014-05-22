@@ -3,13 +3,11 @@
 namespace ChartBlocks\Repository;
 
 use ChartBlocks\Http\Client;
-use ChartBlocks\Http\ClientAwareTrait;
 use ChartBlocks\Http\ClientAwareInterface;
 
 abstract class AbstractRepository implements RepositoryInterface, ClientAwareInterface {
 
-    use ClientAwareTrait;
-
+    protected $httpClient;
     protected $singleResponseKey;
     protected $listResponseKey;
 
@@ -69,6 +67,23 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         }
 
         return new $class($this, $data);
+    }
+
+    /**
+     * 
+     * @param \ChartBlocks\Http\Client
+     */
+    public function setHttpClient(Client $client) {
+        $this->httpClient = $client;
+        return $this;
+    }
+
+    /**
+     * 
+     * @return \ChartBlocks\Http\Client
+     */
+    public function getHttpClient() {
+        return $this->httpClient;
     }
 
 }

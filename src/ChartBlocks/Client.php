@@ -38,12 +38,12 @@ class Client {
         $that = $this;
         $client = $this->getHttpClient();
         $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-                    $that->bindAuth($event['request']);
-                });
+            $that->bindAuth($event['request']);
+        });
 
         $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-                    $that->bindAccept($event['request']);
-                });
+            $that->bindAccept($event['request']);
+        });
     }
 
     /**
