@@ -4,7 +4,7 @@
     "homepage": "http://www.chartblocks.com",
     "license" : "MIT",
     "require": {
-        "php": ">=5.4",
+        "php": ">=5.3.3",
         "guzzle/http": "3.7.0"
     },
     "autoload": {
