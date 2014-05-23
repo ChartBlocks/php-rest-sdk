@@ -9,4 +9,8 @@ class User extends AbstractRepository {
     protected $singleResponseKey = 'user';
     protected $listResponseKey = 'users';
 
+    public function create(array $data = array()) {
+        return $this->igniteClass($data);
+    }
+
 }

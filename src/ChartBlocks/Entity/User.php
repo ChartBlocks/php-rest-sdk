@@ -220,4 +220,26 @@ class User extends AbstractEntity {
         return $this->active;
     }
 
+    public function toArray() {
+        $data = array();
+
+        if ($account = $this->getAccount()) {
+            $data['account']['id'] = $account->getId();
+        }
+        if ($firstname = $this->getFirstname()) {
+            $data['firstname'] = $firstname;
+        }
+        if ($lastname = $this->getLastname()) {
+            $data['lastname'] = $lastname;
+        }
+        if ($email = $this->getEmail()) {
+            $data['email'] = $email;
+        }
+        if ($active = $this->getActive()) {
+            $data['active'] = $active;
+        }
+
+        return $data;
+    }
+
 }
