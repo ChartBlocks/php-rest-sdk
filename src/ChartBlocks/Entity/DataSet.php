@@ -5,6 +5,7 @@ namespace ChartBlocks\Entity;
 use ChartBlocks\DataSet\Query;
 use ChartBlocks\DataSet\Exception as DataSetException;
 use ChartBlocks\DataSet\RowSetCursor;
+use ChartBlocks\DataSet\RowSet;
 use ChartBlocks\DataSet\Row;
 
 class DataSet extends AbstractEntity {
@@ -12,7 +13,7 @@ class DataSet extends AbstractEntity {
     /**
      * 
      * @param mixed $query
-     * @return \ChartBlocks\DataSet\RowSetCursor
+     * @return \ChartBlocks\DataSet\RowSet
      * @throws DataSetException
      */
     public function select($query = array()) {
@@ -21,23 +22,28 @@ class DataSet extends AbstractEntity {
         } elseif (!$query instanceof Query) {
             throw new DataSetException('Unknown item given to select');
         }
+        $that = $this;
 
-        $this->getId();
-        return new RowSetCursor($this, $query);
-    }
+        $callback = function() use($query, $that) {
+            $params = $query->toArray();
+            $client = $that->getRepository()->getHttpClient();
 
-    /**
-     * 
-     * @return \ChartBlocks\DataSet\Row
-     */
-    public function createRow() {
-        $latestVersionMeta = $this->getLatestVersionMeta();
-        $row = array(
-            'id' => $this->getId(),
-            'columns' => $latestVersionMeta['columns'],
-        );
+            $rowsJson = $client->getJson('data/' . $that->getId(), $params);
 
-        return new Row($this, $row);
+            $rows = array();
+
+            foreach ($rowsJson['data'] as $rowNum => $row) {
+                $row = array(
+                    'rowNumber' => $rowNum,
+                    'cells' => array_key_exists('cells', $row) ? $row['cells'] : array()
+                );
+                $rows[$rowNum] = new Row($row);
+            }
+            return $rows;
+        };
+
+
+        return new RowSet($callback);
     }
 
     public function update($rows) {
@@ -77,7 +83,6 @@ class DataSet extends AbstractEntity {
 
             $data[] = $row->toArray(true);
         }
-
         if (count($data) > 0) {
             $json = $this->getRepository()->getHttpClient()->putJson('data/append/' . $this->getId(), array(
                 'data' => $data

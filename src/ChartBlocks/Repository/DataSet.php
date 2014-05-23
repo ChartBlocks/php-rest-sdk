@@ -38,6 +38,8 @@ class DataSet extends AbstractRepository {
             ));
             $params['sourceName'] = $fileJson['source'];
         }
+        
+        
         $importData = $client->postJson('set/import', $params);
 
         return $this->findById($importData['id']);

@@ -15,7 +15,7 @@ class Row extends \ArrayObject {
     public function __construct(array $data = array()) {
         $this->setData($data);
         $this->hasChanged = false;
-        
+
         parent::__construct($this->getCells(true));
     }
 
@@ -23,9 +23,7 @@ class Row extends \ArrayObject {
         if (array_key_exists('rowNumber', $data)) {
             $this->setRowNumber($data['rowNumber']);
         }
-        if (array_key_exists('columnCount', $data)) {
-            $this->setColumnCount($data['columnCount']);
-        }
+
         if (array_key_exists('cells', $data)) {
             $cells = $this->igniteCells($data['cells']);
             $this->setCells($cells);
@@ -34,8 +32,7 @@ class Row extends \ArrayObject {
 
     protected function igniteCells(array $cells) {
         $ignitedCells = array();
-        foreach ($cells as $key => $cell) {
-            $cell['c'] = $key; // temp fix !!!!!
+        foreach ($cells as $cell) {
             $cell = $this->igniteCell($cell);
             $ignitedCells[$cell->getColumnNumber()] = $cell;
         }
@@ -44,7 +41,6 @@ class Row extends \ArrayObject {
     }
 
     protected function igniteCell(array $cell) {
-        $cell['r'] = $this->getRowNumber();
         return new Cell($cell);
     }
 
@@ -63,14 +59,16 @@ class Row extends \ArrayObject {
         return $this;
     }
 
-    public function getCells($createPaddingCells = false) {
-        $colCount = $this->getColumnCount();
+    public function getCells($patchCells = true) {
 
-
-        if ($createPaddingCells) {
+        if ($patchCells) {
             $cells = array();
+            $keys = array_keys($this->cells);
+            rsort($keys);
+            $count = reset($keys);
+
             $i = 1;
-            while ($i <= $colCount) {
+            while ($i <= $count) {
                 $cells[$i] = $this->getCell($i);
                 $i++;
             }
@@ -112,7 +110,7 @@ class Row extends \ArrayObject {
 
     public function toArray($changesOnly = false) {
         $data = array();
-        foreach ($this->getCells() as $cell) {
+        foreach ($this->getCells(!$changesOnly) as $cell) {
             if (!$changesOnly || $cell->hasChanged()) {
                 $data[$cell->getColumnNumber()] = $cell->getValue();
             }
@@ -158,15 +156,6 @@ class Row extends \ArrayObject {
         }
 
         throw new RuntimeException("Column string index can not be " . ((isset($pString{0})) ? "longer than 3 characters" : "empty"));
-    }
-
-    public function setColumnCount($count) {
-        $this->columnCount = $count;
-        return $this;
-    }
-
-    public function getColumnCount() {
-        return $this->columnCount;
     }
 
     /**

@@ -104,10 +104,8 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
 
     public function loadRowChunk($index = 1) {
         $dataSet = $this->getDataSet();
-        $versionMeta = $this->getVersionMeta();
 
         $params = $this->getQueryParams($index);
-
         $uri = 'data/' . $dataSet->getId();
 
         $client = $dataSet->getRepository()->getHttpClient();
@@ -119,7 +117,6 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
         while ($i <= $params['limit'] + $params['offset']) {
             $row = array(
                 'rowNumber' => $i,
-                'columnCount' => $versionMeta['columns'],
                 'cells' => array_key_exists($i, $rows['data']) && array_key_exists('cells', $rows['data'][$i]) ? $rows['data'][$i]['cells'] : array()
             );
             $this->addRow(new Row($row));
@@ -130,16 +127,17 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
     protected function getQueryParams($index) {
         $versionMeta = $this->getVersionMeta();
         $offset = $index - 1;
-
         $query = $this->getQuery();
-        $maxLoad = ($query->getLimit() > $this->maxLoad || !$query->getLimit()) ? $this->maxLoad : $query->getLimit();
-        $limit = $maxLoad > ($versionMeta['rows'] - $offset) ? $versionMeta['rows'] - $offset : $maxLoad;
 
         $params = array(
             'offset' => $offset,
-            'limit' => $limit,
             'version' => $versionMeta['version']
         );
+        $limit = $query->getLimit() > ($versionMeta['rows'] - $offset) ? $versionMeta['rows'] - $offset : $query->getLimit();
+
+        if ($limit) {
+            $params ['offset'] = $offset;
+        }
         return $params;
     }
 

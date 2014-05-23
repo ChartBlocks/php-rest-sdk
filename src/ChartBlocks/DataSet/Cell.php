@@ -9,8 +9,7 @@ class Cell extends AbstractData {
     protected $value;
     protected $column;
     protected $type;
-    protected $original;
-    protected $rowNumber;
+    protected $formatted;
     protected $hasChanged = false;
 
     public function __construct(array $data) {
@@ -21,21 +20,17 @@ class Cell extends AbstractData {
     public function setData(array $data) {
 
         if (array_key_exists('o', $data) && $data['o']) {
-            $this->setOriginalValue($data['o']);
+            $this->setValue($data['o']);
         } else if (array_key_exists('v', $data)) {
-            $this->setOriginalValue($data['v']);
+            $this->setValue($data['v']);
         }
 
         if (array_key_exists('v', $data)) {
-            $this->setValue($data['v']);
+            $this->setFormattedValue($data['v']);
         }
 
         if (array_key_exists('c', $data)) {
             $this->setColumnNumber($data['c']);
-        }
-
-        if (array_key_exists('r', $data)) {
-            $this->setRowNumber($data['r']);
         }
 
         if (array_key_exists('t', $data)) {
@@ -43,12 +38,13 @@ class Cell extends AbstractData {
         }
     }
 
-    public function setOriginalValue($original) {
-        $this->original = $original;
+    public function setFormattedValue($original) {
+        $this->formatted = $original;
+        $this->hasChanged = true;
     }
 
-    public function getOriginalValue() {
-        return $this->original;
+    public function getFormattedValue() {
+        return $this->formatted;
     }
 
     public function setType($type) {
@@ -83,34 +79,12 @@ class Cell extends AbstractData {
         return $this;
     }
 
-    /**
-     * 
-     * @return int
-     */
-    public function getRowNumber() {
-        return $this->rowNumber;
-    }
-
-    /**
-     * 
-     * @param int
-     * @return \ChartBlocks\DataSet\Row
-     */
-    public function setRowNumber($row) {
-        $this->rowNumber = (int) $row;
-        return $this;
-    }
-
-    /**
-     * returns if item has changed since construct
-     * @return bool
-     */
     public function hasChanged() {
         return (bool) $this->hasChanged;
     }
 
     public function __toString() {
-        return (string) $this->getOriginalValue();
+        return (string) $this->getValue();
     }
 
 }
