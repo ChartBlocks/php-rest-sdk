@@ -11,14 +11,14 @@ class AbstractEntity implements EntityInterface {
      * @var \ChartBlocks\Repository\RepositoryInterface
      */
     protected $repository;
-    protected $data;
+    protected $data = array();
 
     /**
      * 
      * @param \ChartBlocks\Repository\RepositoryInterface $repository
      * @param type $data
      */
-    public function __construct(RepositoryInterface $repository, $data = null) {
+    public function __construct(RepositoryInterface $repository, $data = array()) {
         $this->setRepository($repository);
         $this->setData($data);
     }
