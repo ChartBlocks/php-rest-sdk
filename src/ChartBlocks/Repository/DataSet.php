@@ -57,28 +57,4 @@ class DataSet extends AbstractRepository {
         return false;
     }
 
-    /**
-     * DELETE SET, THERE IS NO GOING BACK
-     * @param ChartBlocks\Entity\DataSet|string $set
-     */
-    public function delete($set) {
-        $id = $this->extractId($set);
-        if ($json = $this->getHttpClient()->deleteJson('set/' . $id)) {
-            return !!$json['result'];
-        }
-        return false;
-    }
-
-    /**
-     * @param \ChartBlocks\Entity\DataSet|string $set
-     * @return string $setId
-     */
-    private function extractId($set) {
-        if ($set instanceof EntityDataSet) {
-            return $set->getId();
-        } else {
-            return $set;
-        }
-    }
-
 }
