@@ -4,6 +4,7 @@ namespace ChartBlocks\Repository;
 
 use ChartBlocks\Http\Client;
 use ChartBlocks\Http\ClientAwareInterface;
+use ChartBlocks\Entity\EntityInterface;
 
 abstract class AbstractRepository implements RepositoryInterface, ClientAwareInterface {
 
@@ -41,6 +42,52 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         $data = $client->getJson($this->url . '/' . $id, $query);
         $classData = $this->extractSingleKeyData($data);
         return $this->igniteClass($classData);
+    }
+
+    /**
+     * 
+     * @param \ChartBlocks\Entity\EntityInterface $entity
+     * @return \ChartBlocks\Repository\AbstractRepository
+     * @throws Exception
+     */
+    public function update(EntityInterface $entity) {
+        $id = $entity->getId();
+        if (empty($id)) {
+            throw new Exception('Entity has no ID, is it new?');
+        }
+
+        $data = $entity->toArray();
+        $this->getHttpClient()->putJson($this->url . '/' . $id, $data);
+
+        return $this;
+    }
+
+    /**
+     * 
+     * @param ChartBlocks\Entity\EntityInterface|string
+     * @return boolean
+     */
+    public function delete($set) {
+        $id = $this->extractIdFromParameter($set);
+        $json = $this->getHttpClient()->deleteJson($this->url . '/' . $id);
+
+        if ($json) {
+            return !!$json['result'];
+        }
+
+        return false;
+    }
+
+    /**
+     * @param \ChartBlocks\Entity\DataSet|string $set
+     * @return string $setId
+     */
+    protected function extractIdFromParameter($parameter) {
+        if ($parameter instanceof EntityInterface) {
+            return $parameter->getId();
+        } else {
+            return $parameter;
+        }
     }
 
     protected function extractSingleKeyData(array $data) {
