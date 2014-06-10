@@ -3,6 +3,7 @@
 namespace ChartBlocks\Http;
 
 use Guzzle\Http\Client as HttpClient;
+use Guzzle\Http\Message\Response;
 use Guzzle\Http\Exception\ClientErrorResponseException;
 
 class Client extends HttpClient {
@@ -18,7 +19,7 @@ class Client extends HttpClient {
         }
 
         $response = $this->sendRequest($request);
-        return $response->json();
+        return $this->responseToJson($response);
     }
 
     public function putJson($uri = null, $data = array()) {
@@ -26,7 +27,7 @@ class Client extends HttpClient {
 
         $request = $this->put($path, null, json_encode($data));
         $response = $this->sendRequest($request);
-        return $response->json();
+        return $this->responseToJson($response);
     }
 
     public function postJson($uri = null, $data = array()) {
@@ -34,7 +35,7 @@ class Client extends HttpClient {
 
         $request = $this->post($path, null, json_encode($data));
         $response = $this->sendRequest($request);
-        return $response->json();
+        return $this->responseToJson($response);
     }
 
     public function deleteJson($uri = null, $data = array()) {
@@ -42,7 +43,7 @@ class Client extends HttpClient {
 
         $request = $this->delete($path, null, json_encode($data));
         $response = $this->sendRequest($request);
-        return $response->json();
+        return $this->responseToJson($response);
     }
 
     public function postFile($uri = null, $file = null) {
@@ -54,7 +55,7 @@ class Client extends HttpClient {
             $request->addPostFile('upload', $file);
         }
         $response = $this->sendRequest($request);
-        return $response->json();
+        return $this->responseToJson($response);
     }
 
     public function sendRequest($request) {
@@ -72,6 +73,17 @@ class Client extends HttpClient {
             $this->exceptionHandler = new ExceptionHandler();
         }
         return $this->exceptionHandler;
+    }
+
+    protected function responseToJson(Response $response) {
+        try {
+            return $response->json();
+        } Catch (\Guzzle\Common\Exception\RuntimeException $e) {
+            $exception = new Exception\BadResponseException('Could not parse response as JSON', 500, $e);
+            $exception->setResponse($response);
+            
+            throw $exception;
+        }
     }
 
 }
