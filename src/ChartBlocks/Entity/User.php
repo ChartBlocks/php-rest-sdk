@@ -61,16 +61,9 @@ class User extends AbstractEntity {
     }
 
     public function setData($data) {
-        if (array_key_exists('groups', $data)) {
-            $groups = GroupIgniter::igniteGroups($data['groups']);
-            $this->setGroups($groups);
+        if (array_key_exists('id', $data)) {
+            $this->setId($data['id']);
         }
-
-        if (array_key_exists('account', $data)) {
-            $account = $this->getAccount();
-            $account->setData($data['account']);
-        }
-
         if (array_key_exists('firstname', $data)) {
             $this->setFirstname($data['firstname']);
         }
@@ -85,6 +78,16 @@ class User extends AbstractEntity {
         }
         if (array_key_exists('active', $data)) {
             $this->setActive($data['active']);
+        }
+
+        if (array_key_exists('groups', $data)) {
+            $groups = GroupIgniter::igniteGroups($data['groups']);
+            $this->setGroups($groups);
+        }
+
+        if (array_key_exists('account', $data)) {
+            $account = $this->getAccount();
+            $account->setData($data['account']);
         }
     }
 
