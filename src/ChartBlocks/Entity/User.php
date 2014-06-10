@@ -40,6 +40,12 @@ class User extends AbstractEntity {
 
     /**
      *
+     * @var string 
+     */
+    protected $password;
+
+    /**
+     *
      * @var bool 
      */
     protected $active;
@@ -52,19 +58,17 @@ class User extends AbstractEntity {
 
     function __construct(RepositoryInterface $repository, $data = array()) {
         parent::__construct($repository, $data);
-
-        $this->setConfig($data);
     }
 
-    public function setConfig(array $data = array()) {
+    public function setData($data) {
         if (array_key_exists('groups', $data)) {
             $groups = GroupIgniter::igniteGroups($data['groups']);
             $this->setGroups($groups);
         }
 
         if (array_key_exists('account', $data)) {
-            $account = new Account($data['account']);
-            $this->setAccount($account);
+            $account = $this->getAccount();
+            $account->setData($data['account']);
         }
 
         if (array_key_exists('firstname', $data)) {
@@ -72,6 +76,9 @@ class User extends AbstractEntity {
         }
         if (array_key_exists('lastname', $data)) {
             $this->setLastname($data['lastname']);
+        }
+        if (array_key_exists('password', $data)) {
+            $this->setPassword($data['password']);
         }
         if (array_key_exists('email', $data)) {
             $this->setEmail($data['email']);
@@ -97,6 +104,9 @@ class User extends AbstractEntity {
      * @return \ChartBlocks\User\Account|null
      */
     public function getAccount() {
+        if ($this->account === null) {
+            $this->account = new Account();
+        }
         return $this->account;
     }
 
@@ -186,6 +196,25 @@ class User extends AbstractEntity {
 
     /**
      * 
+     * @param type $password
+     * @return \ChartBlocks\Entity\User
+     */
+    public function setPassword($password) {
+        $this->password = $password;
+        return $this;
+    }
+
+    /**
+     * 
+     * @param type $password
+     * @return \ChartBlocks\Entity\User
+     */
+    private function getPassword() {
+        return $this->password;
+    }
+
+    /**
+     * 
      * @param type $id
      * @return \ChartBlocks\Entity\User
      */
@@ -224,7 +253,7 @@ class User extends AbstractEntity {
         $data = array();
 
         if ($account = $this->getAccount()) {
-            $data['account']['id'] = $account->getId();
+            $data['account'] = $account->toArray();
         }
         if ($firstname = $this->getFirstname()) {
             $data['firstname'] = $firstname;
@@ -235,10 +264,9 @@ class User extends AbstractEntity {
         if ($email = $this->getEmail()) {
             $data['email'] = $email;
         }
-        if ($active = $this->getActive()) {
-            $data['active'] = $active;
+        if ($password = $this->getPassword()) {
+            $data['password'] = $password;
         }
-
         return $data;
     }
 

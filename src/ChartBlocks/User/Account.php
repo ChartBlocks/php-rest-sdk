@@ -6,7 +6,7 @@ class Account {
 
     protected $id;
     protected $name;
-    protected $plan;
+    protected $plan = 'free';
     protected $chosenPlan;
     protected $active;
     protected $cardActive;
@@ -22,10 +22,10 @@ class Account {
     protected $editable;
 
     public function __construct(array $data = array()) {
-        $this->setConfig($data);
+        $this->setData($data);
     }
 
-    public function setConfig(array $config = array()) {
+    public function setData(array $config = array()) {
 
         foreach ($config as $key => $value) {
             if (property_exists($this, $key)) {
@@ -97,6 +97,10 @@ class Account {
 
     public function getEditable() {
         return $this->editable;
+    }
+
+    public function toArray() {
+        return get_object_vars($this);
     }
 
 }
