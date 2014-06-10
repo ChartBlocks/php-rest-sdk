@@ -22,13 +22,12 @@ class Chart extends AbstractEntity {
         } else if (is_array($config)) {
             $this->config = new Config($config);
         } else {
-            throw new Exception('Config given is not an instance of \ChartBlocks\Chart\Config or an array()');
+            throw new Exception('Config given is not an instance of \ChartBlocks\Chart\Config or an array');
         }
         return $this;
     }
 
     public function __get($name) {
-
         if (strtolower($name) === 'config') {
             return $this->getConfig();
         } else if (array_key_exists($name, $this->data)) {
