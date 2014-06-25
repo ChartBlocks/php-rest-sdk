@@ -2,6 +2,8 @@
 
 namespace ChartBlocks\Chart;
 
+use ChartBlocks\Entity\Chart;
+
 class Config implements ChartAwareInterface {
 
     protected $chart;

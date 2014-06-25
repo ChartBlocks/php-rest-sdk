@@ -2,7 +2,7 @@
 
 namespace ChartBlocks\Chart;
 
-use ChartBlocks\Chart;
+use ChartBlocks\Entity\Chart;
 
 interface ChartAwareInterface {
 
