@@ -24,6 +24,11 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         return $this->igniteClass($classData);
     }
 
+    /**
+     * 
+     * @param array $query
+     * @return \ChartBlocks\Repository\ResultSet
+     */
     public function find($query = array()) {
         $client = $this->getHttpClient();
         $data = $client->getJson($this->url, $query);
@@ -33,8 +38,13 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         foreach ($itemData as $classData) {
             $items[] = $this->igniteClass($classData);
         }
+        $resultSet = new ResultSet($items);
 
-        return $items;
+        if (isset($data['state']['totalRecords'])) {
+            $resultSet->setTotalRecords($data['state']['totalRecords']);
+        }
+
+        return $resultSet;
     }
 
     public function findById($id, $query = array()) {
