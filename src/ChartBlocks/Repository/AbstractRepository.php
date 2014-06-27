@@ -39,7 +39,6 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
             $items[] = $this->igniteClass($classData);
         }
         $resultSet = new ResultSet($items);
-
         if (isset($data['state']['totalRecords'])) {
             $resultSet->setTotalRecords($data['state']['totalRecords']);
         }
