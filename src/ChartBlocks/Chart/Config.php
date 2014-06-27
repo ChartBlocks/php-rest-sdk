@@ -13,6 +13,10 @@ class Config implements ChartAwareInterface {
         $this->data = $data;
     }
 
+    public function __call($method, $arguments) {
+        return $this->__get($method);
+    }
+
     public function __get($name) {
         if (isset($this->data[$name])) {
 

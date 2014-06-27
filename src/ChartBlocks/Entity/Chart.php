@@ -12,7 +12,8 @@ class Chart extends AbstractEntity {
     protected $images;
     protected $totalViews;
     protected $createdAt;
-    protected $updatedAT;
+    protected $updatedAt;
+    protected $publicUrl;
 
     public function setData($data) {
         if (array_key_exists('id', $data)) {
@@ -35,6 +36,10 @@ class Chart extends AbstractEntity {
             $this->setTotalViews($data['totalViews']);
         }
 
+        if (array_key_exists('publicUrl', $data)) {
+            $this->setPublicUrl($data['publicUrl']);
+        }
+
         if (array_key_exists('createdAt', $data)) {
             $this->setCreatedAt($data['createdAt']);
         }
@@ -44,6 +49,15 @@ class Chart extends AbstractEntity {
         }
 
         return parent::setData($data);
+    }
+
+    public function setPublicUrl($publicUrl) {
+        $this->publicUrl = $publicUrl;
+        return $this;
+    }
+
+    public function getPublicUrl() {
+        return $this->publicUrl;
     }
 
     public function setName($name) {
@@ -91,10 +105,6 @@ class Chart extends AbstractEntity {
         return $this;
     }
 
-    public function getConfig() {
-        return $this->config;
-    }
-
     public function setCreatedAt($createdAt) {
         $this->createdAt = $createdAt;
         return $this;
@@ -122,6 +132,10 @@ class Chart extends AbstractEntity {
             throw new Exception('Config given is not an instance of \ChartBlocks\Chart\Config or an array');
         }
         return $this;
+    }
+
+    public function getConfig() {
+        return $this->config;
     }
 
 }
