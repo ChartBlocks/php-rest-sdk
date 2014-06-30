@@ -43,6 +43,9 @@ class Chart extends AbstractEntity {
         if (array_key_exists('createdAt', $data)) {
             $this->setCreatedAt($data['createdAt']);
         }
+        if (array_key_exists('updatedAt', $data)) {
+            $this->setUpdatedAt($data['updatedAt']);
+        }
 
         if (array_key_exists('creator', $data)) {
             $this->setCreator(new Profile($this->getRepository(), $data['creator']));
