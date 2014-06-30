@@ -109,6 +109,11 @@ class Client {
      * @return \ChartBlocks\Client
      */
     public function setConfig(array $config) {
+        if (array_key_exists('server', $config)) {
+            $this->setBaseUrl($config['server']);
+            unset($config['server']);
+        }
+
         $this->config = $config;
         return $this;
     }
@@ -126,12 +131,22 @@ class Client {
 
     /**
      * 
+     * @param string $url
+     * @return \ChartBlocks\Client
+     */
+    protected function setBaseUrl($url) {
+        $this->baseUrl = $url;
+        return $this;
+    }
+
+    /**
+     * 
      * @return string
      */
     public function getBaseUrl() {
         if ($this->baseUrl === null) {
             $env = getenv('CB_API_URL');
-            $this->baseUrl = empty($env) ? $this->defaultBaseUrl : $env;
+            $this->setBaseUrl(empty($env) ? $this->defaultBaseUrl : $env);
         }
 
         return $this->baseUrl;
