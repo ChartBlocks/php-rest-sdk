@@ -14,6 +14,7 @@ class Chart extends AbstractEntity {
     protected $createdAt;
     protected $updatedAt;
     protected $publicUrl;
+    protected $name;
 
     public function setData($data) {
         if (array_key_exists('id', $data)) {

@@ -3,7 +3,6 @@
 namespace ChartBlocks\Entity;
 
 use ChartBlocks\Repository\RepositoryInterface;
-use ChartBlocks\User\Group\Igniter as GroupIgniter;
 use ChartBlocks\User\Account;
 
 class Profile extends AbstractEntity {
