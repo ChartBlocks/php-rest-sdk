@@ -52,7 +52,7 @@ class DataSet extends AbstractRepository {
     public function truncate($set) {
         $id = $this->extractId($set);
         if ($json = $this->getHttpClient()->deleteJson('data/' . $id)) {
-            return !!$json['ok'];
+            return !!$json['success'];
         }
         return false;
     }

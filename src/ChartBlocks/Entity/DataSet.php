@@ -137,7 +137,7 @@ class DataSet extends AbstractEntity {
         );
 
         if ($json = $this->getRepository()->getHttpClient()->putJson('data/alter/' . $this->getId(), $params)) {
-            return !!$json['ok'];
+            return !!$json['success'];
         }
     }
 
