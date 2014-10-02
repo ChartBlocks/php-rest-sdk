@@ -12,9 +12,9 @@ class Statistics extends AbstractRepository {
         $client = $this->getHttpClient();
         $data = $client->getJson($this->url, $query);
 
-        $itemData = $this->extractListKeyData($data);
+        $itemData = $this->extractListItemData($data);
 
-        $class = $this->igniteClass($itemData);
+        $class = $this->igniteEntity($itemData);
 
         return $class;
     }

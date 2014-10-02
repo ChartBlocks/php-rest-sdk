@@ -13,7 +13,8 @@
 
 namespace ChartBlocks;
 
-use Guzzle\Http\Message\Request;
+use Guzzle\Http\Client as HttpClient;
+use Guzzle\Http\Message\Request as HttpRequest;
 
 class Client {
 
@@ -21,29 +22,93 @@ class Client {
     protected $signature;
     protected $exceptionHandler;
     protected $httpClient;
-    protected $baseUrl;
-    protected $defaultBaseUrl = 'https://api.chartblocks.com/v1';
+    protected $defaultApiUrl = 'https://api.chartblocks.com/v1';
     protected $respositories = array();
 
     /**
      * 
      * @param array $config
      */
-    public function __construct($config = array()) {
+    public function __construct(array $config = array()) {
         $this->setConfig($config);
-        $this->bindEvents();
     }
 
-    public function bindEvents() {
-        $that = $this;
-        $client = $this->getHttpClient();
-        $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-            $that->bindAuth($event['request']);
-        });
+    /**
+     * 
+     * @param string $name
+     * @return \ChartBlocks\Repository\RepositoryInterface
+     * @throws Exception
+     */
+    public function getRepository($name) {
+        if (!array_key_exists($name, $this->respositories)) {
+            $className = '\\ChartBlocks\\Repository\\' . ucfirst($name);
+            if (class_exists($className)) {
+                $this->respositories[$name] = new $className($this->getHttpClient());
+            } else {
+                throw new Exception("Repository $name could not be found.");
+            }
+        }
+        
+        return $this->respositories[$name];
+    }
 
-        $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-            $that->bindAccept($event['request']);
-        });
+    /**
+     * 
+     * @return string
+     */
+    public function getApiUrl() {
+        if (array_key_exists('api_url', $this->config)) {
+            return $this->config['api_url'];
+        }
+
+        $env = getenv('CB_API_URL');
+        if (!empty($env)) {
+            return $env;
+        }
+
+        return $this->defaultApiUrl;
+    }
+
+    public function get($uri, array $params = array()) {
+        $request = $this->get($uri);
+        foreach ($params as $key => $value) {
+            $request->getQuery()->set($key, $value);
+        }
+
+        $response = $request->send();
+        return $response->json();
+    }
+
+    public function put($uri, $data = array()) {
+        $request = $this->put($uri, null, json_encode($data));
+
+        $response = $request->send();
+        return $response->json();
+    }
+
+    public function post($uri, $data = array()) {
+        $request = $this->post($uri, null, json_encode($data));
+
+        $response = $request->send();
+        return $response->json();
+    }
+
+    public function delete($uri, $data = array()) {
+        $request = $this->delete($uri, null, json_encode($data));
+
+        $response = $request->send();
+        return $response->json();
+    }
+
+    public function postFile($uri, $file) {
+        $request = $this->post($uri);
+
+        if ($file) {
+            $request->addPostFile('upload', $file);
+        }
+
+        $response = $request->send();
+        return $response->json();
     }
 
     /**
@@ -51,7 +116,7 @@ class Client {
      * @param \Guzzle\Http\Message\Request $request
      * @throws Exception
      */
-    public function bindAuth(Request $request) {
+    public function bindAuth(HttpRequest $request) {
         $token = $this->getAuthToken();
         $secret = $this->getAuthSecret();
 
@@ -98,7 +163,7 @@ class Client {
      * @param \Guzzle\Http\Message\Request $request
      * @return \ChartBlocks\Client
      */
-    public function bindAccept(Request $request) {
+    public function bindAccept(HttpRequest $request) {
         $request->setHeader('Accept', 'application/json');
         return $this;
     }
@@ -109,11 +174,6 @@ class Client {
      * @return \ChartBlocks\Client
      */
     public function setConfig(array $config) {
-        if (array_key_exists('server', $config)) {
-            $this->setBaseUrl($config['server']);
-            unset($config['server']);
-        }
-
         $this->config = $config;
         return $this;
     }
@@ -122,63 +182,39 @@ class Client {
      * 
      * @return \Guzzle\Http\Client
      */
-    public function getHttpClient() {
+    protected function getHttpClient() {
         if ($this->httpClient === null) {
-            $this->httpClient = new Http\Client($this->getBaseUrl(), array());
+            $this->httpClient = $this->createHttpClient();
         }
+
         return $this->httpClient;
     }
 
     /**
      * 
-     * @param string $url
-     * @return \ChartBlocks\Client
+     * @return \Guzzle\Http\Client
      */
-    protected function setBaseUrl($url) {
-        $this->baseUrl = $url;
-        return $this;
-    }
+    protected function createHttpClient() {
+        $client = new HttpClient($this->getApiUrl(), array());
 
-    /**
-     * 
-     * @return string
-     */
-    public function getBaseUrl() {
-        if ($this->baseUrl === null) {
-            $env = getenv('CB_API_URL');
-            $this->setBaseUrl(empty($env) ? $this->defaultBaseUrl : $env);
-        }
+        $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
+            $that->bindAccept($event['request']);
+            $that->bindAuth($event['request']);
+        });
 
-        return $this->baseUrl;
+        return $client;
     }
 
     /**
      * 
      * @return \ChartBlocks\Signature
      */
-    public function getSignature() {
+    protected function getSignature() {
         if ($this->signature === null) {
             $this->signature = new Signature();
         }
-        return $this->signature;
-    }
 
-    /**
-     * 
-     * @param string $name
-     * @return \ChartBlocks\Repository\RepositoryInterface
-     * @throws Exception
-     */
-    public function getRepository($name) {
-        if (!array_key_exists($name, $this->respositories)) {
-            $className = '\\ChartBlocks\\Repository\\' . ucfirst($name);
-            if (class_exists($className)) {
-                $this->respositories[$name] = new $className($this->getHttpClient());
-            } else {
-                throw new Exception("Respository $name could not be found.");
-            }
-        }
-        return $this->respositories[$name];
+        return $this->signature;
     }
 
 }

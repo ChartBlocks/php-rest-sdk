@@ -2,26 +2,45 @@
 
 namespace ChartBlocks\Repository;
 
-use ChartBlocks\Http\Client;
-use ChartBlocks\Http\ClientAwareInterface;
+use ChartBlocks\Client;
 use ChartBlocks\Entity\EntityInterface;
 
-abstract class AbstractRepository implements RepositoryInterface, ClientAwareInterface {
+abstract class AbstractRepository implements RepositoryInterface {
 
-    protected $httpClient;
+    protected $client;
     protected $singleResponseKey;
     protected $listResponseKey;
 
     public function __construct(Client $client) {
-        $this->setHttpClient($client);
+        $this->setClient($client);
     }
 
-    public function create($data = array()) {
-        $client = $this->getHttpClient();
-        $response = $client->postJson($this->url, $data);
+    /**
+     * 
+     * @param \ChartBlocks\Client
+     */
+    public function setClient(Client $client) {
+        $this->client = $client;
+        return $this;
+    }
 
-        $classData = $this->extractSingleKeyData($response);
-        return $this->igniteClass($classData);
+    /**
+     * 
+     * @return \ChartBlocks\Client
+     */
+    public function getClient() {
+        return $this->client;
+    }
+
+    /**
+     * 
+     * @param array $data
+     * @return \ChartBlocks\Entity\EntityInterface
+     */
+    public function create(array $data = array()) {
+        $response = $this->getClient()->postJson($this->url, $data);
+        $item = $this->extractSingleItemData($response);
+        return $this->igniteEntity($item);
     }
 
     /**
@@ -30,27 +49,36 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
      * @return \ChartBlocks\Repository\ResultSet
      */
     public function find($query = array()) {
-        $client = $this->getHttpClient();
-        $data = $client->getJson($this->url, $query);
+        $response = $this->getClient()->get($this->url, $query);
+        $items = $this->extractListItemData($response);
 
-        $itemData = $this->extractListKeyData($data);
-        $items = array();
-        foreach ($itemData as $classData) {
-            $items[] = $this->igniteClass($classData);
+        $resultSet = new ResultSet();
+        foreach ($items as $item) {
+            $entity = $this->igniteEntity($item);
+            $resultSet->append($entity);
         }
-        $resultSet = new ResultSet($items);
-        if (isset($data['state']['totalRecords'])) {
-            $resultSet->setTotalRecords($data['state']['totalRecords']);
+
+        if (isset($response['state']['totalRecords'])) {
+            $resultSet->setTotalRecords($response['state']['totalRecords']);
         }
 
         return $resultSet;
     }
 
-    public function findById($id, $query = array()) {
-        $client = $this->getHttpClient();
-        $data = $client->getJson($this->url . '/' . $id, $query);
-        $classData = $this->extractSingleKeyData($data);
-        return $this->igniteClass($classData);
+    /**
+     * 
+     * @param string $id
+     * @param array $query
+     * @return \ChartBlocks\Entity\EntityInterface
+     */
+    public function findById($id, array $query = array()) {
+        if (EntityId::isValid($id) === false) {
+            throw new \InvalidArgumentException('Invalid entity ID');
+        }
+
+        $response = $this->getClient()->get($this->url . '/' . $id, $query);
+        $item = $this->extractSingleItemData($response);
+        return $this->igniteEntity($item);
     }
 
     /**
@@ -73,33 +101,45 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
 
     /**
      * 
-     * @param ChartBlocks\Entity\EntityInterface|string
+     * @param ChartBlocks\Entity\EntityInterface|string $idOrEntity
      * @return boolean
      */
-    public function delete($set) {
-        $id = $this->extractIdFromParameter($set);
-        $json = $this->getHttpClient()->deleteJson($this->url . '/' . $id);
+    public function delete($idOrEntity) {
+        $id = $this->extractIdFromParameter($idOrEntity);
+        $json = $this->getClient()->delete($this->url . '/' . $id);
 
         if ($json) {
-            return !!$json['result'];
+            return (bool) $json['result'];
         }
 
         return false;
     }
 
     /**
-     * @param \ChartBlocks\Entity\DataSet|string $set
+     * @param \ChartBlocks\Entity\EntityInterface|string $parameter
+     * @throws \InvalidArgumentException
      * @return string $setId
      */
-    protected function extractIdFromParameter($parameter) {
-        if ($parameter instanceof EntityInterface) {
-            return $parameter->getId();
-        } else {
-            return $parameter;
+    protected function extractIdFromParameter($idOrEntity) {
+        if (is_string($idOrEntity) && EntityId::isValid($idOrEntity)) {
+            return $idOrEntity;
         }
+
+        if ($idOrEntity instanceof EntityInterface) {
+            return $idOrEntity->getId();
+        }
+
+        throw new \InvalidArgumentException('Entity or Entity ID required');
     }
 
-    protected function extractSingleKeyData(array $data) {
+    /**
+     * Takes the raw JSON response and extracts the item data
+     * 
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    protected function extractSingleItemData(array $data) {
         if ($this->singleResponseKey && !array_key_exists($this->singleResponseKey, $data)) {
             throw new Exception('Invalid response, missing field ' . $this->singleResponseKey);
         }
@@ -107,7 +147,14 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         return ($this->singleResponseKey) ? $data[$this->singleResponseKey] : $data;
     }
 
-    protected function extractListKeyData(array $data) {
+    /**
+     * Takes the raw JSON response and extracts the array of items
+     * 
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    protected function extractListItemData(array $data) {
         if ($this->listResponseKey && !array_key_exists($this->listResponseKey, $data)) {
             throw new Exception('Invalid response, missing field ' . $this->listResponseKey);
         }
@@ -115,30 +162,19 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         return ($this->listResponseKey) ? $data[$this->listResponseKey] : $data;
     }
 
-    protected function igniteClass($data) {
+    /**
+     * 
+     * @param array $data
+     * @return \ChartBlocks\Entity\EntityInterface
+     * @throws Exception
+     */
+    protected function igniteEntity(array $data) {
         $class = $this->class;
         if (empty($class) || class_exists($class) === false) {
-            throw new Exception('Invalid entity class');
+            throw new Exception("Invalid entity class '$class'");
         }
 
         return new $class($this, $data);
-    }
-
-    /**
-     * 
-     * @param \ChartBlocks\Http\Client
-     */
-    public function setHttpClient(Client $client) {
-        $this->httpClient = $client;
-        return $this;
-    }
-
-    /**
-     * 
-     * @return \ChartBlocks\Http\Client
-     */
-    public function getHttpClient() {
-        return $this->httpClient;
     }
 
 }
