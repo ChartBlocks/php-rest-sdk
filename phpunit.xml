@@ -1,6 +1,4 @@
-<phpunit
-    bootstrap="vendor/autoload.php"
->
+<phpunit bootstrap="vendor/autoload.php">
     <testsuites>
         <testsuite name="PHP Rest SDK">
             <directory>tests</directory>
@@ -14,5 +12,8 @@
         <blacklist>
             <directory>./vendor</directory>
         </blacklist>
+        <whitelist>
+            <directory>./src</directory>
+        </whitelist>
     </filter>
 </phpunit>

@@ -136,9 +136,21 @@ class DataSet extends AbstractEntity {
             'amount' => -1
         );
 
-        if ($json = $this->getRepository()->getHttpClient()->putJson('data/alter/' . $this->getId(), $params)) {
-            return !!$json['success'];
-        }
+        $setId = $this->getId();
+        $json = $this->getRepository()->getClient()->put('data/alter/' . $setId, $params);
+
+        return (isset($json['success']) && $json['success']);
+    }
+
+    /**
+     * 
+     * @return boolean
+     */
+    public function truncate() {
+        $id = $this->getId();
+        $json = $this->getRepository()->getClient()->delete('data/' . $id);
+
+        return (isset($json['success']) && $json['success']);
     }
 
     /**

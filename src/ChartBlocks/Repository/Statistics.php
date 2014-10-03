@@ -4,9 +4,9 @@ namespace ChartBlocks\Repository;
 
 class Statistics extends AbstractRepository {
 
-    protected $url = '/chart/statistics';
-    protected $class = '\\ChartBlocks\\Entity\\Statistics';
-    protected $listResponseKey = 'statistics';
+    public $url = 'chart/statistics/';
+    public $class = '\\ChartBlocks\\Entity\\Statistics';
+    public $listResponseKey = 'statistics';
 
     public function find($query = array()) {
         $client = $this->getHttpClient();

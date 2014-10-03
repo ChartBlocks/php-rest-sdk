@@ -13,6 +13,7 @@ class Signature {
             case 'post':
             case 'patch':
             case 'put':
+            case 'delete':
                 $body = (string) $request->getBody();
                 break;
             default:

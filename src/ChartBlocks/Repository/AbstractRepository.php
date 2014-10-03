@@ -4,12 +4,27 @@ namespace ChartBlocks\Repository;
 
 use ChartBlocks\Client;
 use ChartBlocks\Entity\EntityInterface;
+use ChartBlocks\Entity\EntityId;
 
 abstract class AbstractRepository implements RepositoryInterface {
 
+    /**
+     *
+     * @var string|null
+     */
+    public $singleResponseKey;
+
+    /**
+     *
+     * @var string|null
+     */
+    public $listResponseKey;
+
+    /**
+     *
+     * @var \ChartBlocks\Client
+     */
     protected $client;
-    protected $singleResponseKey;
-    protected $listResponseKey;
 
     public function __construct(Client $client) {
         $this->setClient($client);
@@ -30,17 +45,6 @@ abstract class AbstractRepository implements RepositoryInterface {
      */
     public function getClient() {
         return $this->client;
-    }
-
-    /**
-     * 
-     * @param array $data
-     * @return \ChartBlocks\Entity\EntityInterface
-     */
-    public function create(array $data = array()) {
-        $response = $this->getClient()->postJson($this->url, $data);
-        $item = $this->extractSingleItemData($response);
-        return $this->igniteEntity($item);
     }
 
     /**
@@ -83,6 +87,17 @@ abstract class AbstractRepository implements RepositoryInterface {
 
     /**
      * 
+     * @param array $data
+     * @return \ChartBlocks\Entity\EntityInterface
+     */
+    public function create(array $data = array()) {
+        $response = $this->getClient()->post($this->url, $data);
+        $item = $this->extractSingleItemData($response);
+        return $this->igniteEntity($item);
+    }
+
+    /**
+     * 
      * @param \ChartBlocks\Entity\EntityInterface $entity
      * @return \ChartBlocks\Repository\AbstractRepository
      * @throws Exception
@@ -94,7 +109,7 @@ abstract class AbstractRepository implements RepositoryInterface {
         }
 
         $data = $entity->toArray();
-        $this->getHttpClient()->putJson($this->url . '/' . $id, $data);
+        $this->getClient()->put($this->url . '/' . $id, $data);
 
         return $this;
     }
@@ -108,11 +123,26 @@ abstract class AbstractRepository implements RepositoryInterface {
         $id = $this->extractIdFromParameter($idOrEntity);
         $json = $this->getClient()->delete($this->url . '/' . $id);
 
-        if ($json) {
+        if (isset($json['result'])) {
             return (bool) $json['result'];
         }
 
         return false;
+    }
+
+    /**
+     * 
+     * @param array $data
+     * @return \ChartBlocks\Entity\EntityInterface
+     * @throws Exception
+     */
+    public function igniteEntity(array $data) {
+        $class = $this->class;
+        if (empty($class) || class_exists($class) === false) {
+            throw new Exception("Invalid entity class '$class'");
+        }
+
+        return new $class($this, $data);
     }
 
     /**
@@ -160,21 +190,6 @@ abstract class AbstractRepository implements RepositoryInterface {
         }
 
         return ($this->listResponseKey) ? $data[$this->listResponseKey] : $data;
-    }
-
-    /**
-     * 
-     * @param array $data
-     * @return \ChartBlocks\Entity\EntityInterface
-     * @throws Exception
-     */
-    protected function igniteEntity(array $data) {
-        $class = $this->class;
-        if (empty($class) || class_exists($class) === false) {
-            throw new Exception("Invalid entity class '$class'");
-        }
-
-        return new $class($this, $data);
     }
 
 }

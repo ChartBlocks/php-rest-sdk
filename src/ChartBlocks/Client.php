@@ -18,12 +18,28 @@ use Guzzle\Http\Message\Request as HttpRequest;
 
 class Client {
 
+    const REPO_CHART = 'chart';
+    const REPO_CHARTDATA = 'chartData';
+    const REPO_DATASET = 'dataSet';
+    const REPO_PROFILE = 'profile';
+    const REPO_SESSIONTOKEN = 'sessionToken';
+    const REPO_STATISTICS = 'statistics';
+    const REPO_USER = 'user';
+
     protected $config;
     protected $signature;
     protected $exceptionHandler;
     protected $httpClient;
-    protected $defaultApiUrl = 'https://api.chartblocks.com/v1';
-    protected $respositories = array();
+    protected $defaultApiUrl = 'https://api.chartblocks.com/v1/';
+    protected $repositories = array(
+        self::REPO_CHART => '\\ChartBlocks\Repository\Chart',
+        self::REPO_CHARTDATA => '\\ChartBlocks\Repository\ChartData',
+        self::REPO_DATASET => '\\ChartBlocks\Repository\DataSet',
+        self::REPO_PROFILE => '\\ChartBlocks\Repository\Profile',
+        self::REPO_SESSIONTOKEN => '\\ChartBlocks\Repository\SessionToken',
+        self::REPO_STATISTICS => '\\ChartBlocks\Repository\Statistics',
+        self::REPO_USER => '\\ChartBlocks\Repository\User',
+    );
 
     /**
      * 
@@ -40,16 +56,31 @@ class Client {
      * @throws Exception
      */
     public function getRepository($name) {
-        if (!array_key_exists($name, $this->respositories)) {
-            $className = '\\ChartBlocks\\Repository\\' . ucfirst($name);
-            if (class_exists($className)) {
-                $this->respositories[$name] = new $className($this->getHttpClient());
-            } else {
-                throw new Exception("Repository $name could not be found.");
-            }
+        if (false === array_key_exists($name, $this->repositories)) {
+            throw new \InvalidArgumentException("Repository $name does not exist");
         }
-        
-        return $this->respositories[$name];
+
+        if (is_string($this->repositories[$name])) {
+            $className = $this->repositories[$name];
+            $this->repositories[$name] = new $className($this);
+        }
+
+        return $this->repositories[$name];
+    }
+
+    /**
+     * Tries to load a repository using the syntax $this->chart
+     * 
+     * @param string $name
+     * @return \ChartBlocks\Repository\RepositoryInterface
+     * @throws Exception
+     */
+    public function __get($name) {
+        if (array_key_exists($name, $this->repositories)) {
+            return $this->getRepository($name);
+        }
+
+        throw new Exception("Property '$name' does not exist");
     }
 
     /**
@@ -58,19 +89,62 @@ class Client {
      */
     public function getApiUrl() {
         if (array_key_exists('api_url', $this->config)) {
-            return $this->config['api_url'];
+            return $this->parseApiUrl($this->config['api_url']);
         }
 
         $env = getenv('CB_API_URL');
         if (!empty($env)) {
-            return $env;
+            return $this->parseApiUrl($env);
         }
 
         return $this->defaultApiUrl;
     }
 
+    protected function parseApiUrl($url) {
+        return rtrim($url, '/') . '/';
+    }
+
+    protected function parseApiPath($path) {
+        return ltrim($path, '/');
+    }
+
+    /**
+     * 
+     * @return string|null
+     */
+    public function getAuthToken() {
+        if (array_key_exists('token', $this->config)) {
+            return $this->config['token'];
+        } else {
+            $env = getenv('CB_AUTH_TOKEN');
+            if (!empty($env)) {
+                return $env;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 
+     * @return string|null
+     */
+    public function getAuthSecret() {
+        if (array_key_exists('secret', $this->config)) {
+            return $this->config['secret'];
+        } else {
+            $env = getenv('CB_AUTH_SECRET');
+            if (!empty($env)) {
+                return $env;
+            }
+        }
+
+        return null;
+    }
+
     public function get($uri, array $params = array()) {
-        $request = $this->get($uri);
+        $path = $this->parseApiPath($uri);
+        $request = $this->getHttpClient()->get($path);
         foreach ($params as $key => $value) {
             $request->getQuery()->set($key, $value);
         }
@@ -80,32 +154,34 @@ class Client {
     }
 
     public function put($uri, $data = array()) {
-        $request = $this->put($uri, null, json_encode($data));
+        $path = $this->parseApiPath($uri);
+        $request = $this->getHttpClient()->put($path, null, json_encode($data));
 
         $response = $request->send();
         return $response->json();
     }
 
     public function post($uri, $data = array()) {
-        $request = $this->post($uri, null, json_encode($data));
+        $path = $this->parseApiPath($uri);
+        $request = $this->getHttpClient()->post($path, null, json_encode($data));
 
         $response = $request->send();
         return $response->json();
     }
 
     public function delete($uri, $data = array()) {
-        $request = $this->delete($uri, null, json_encode($data));
+        $path = $this->parseApiPath($uri);
+        $request = $this->getHttpClient()->delete($path, null, json_encode($data));
 
         $response = $request->send();
         return $response->json();
     }
 
-    public function postFile($uri, $file) {
-        $request = $this->post($uri);
+    public function postFile($uri, $file, $contentType = null) {
+        $path = $this->parseApiPath($uri);
+        $request = $this->getHttpClient()->post($path);
 
-        if ($file) {
-            $request->addPostFile('upload', $file);
-        }
+        $request->addPostFile('upload', $file, $contentType);
 
         $response = $request->send();
         return $response->json();
@@ -123,38 +199,8 @@ class Client {
         if ($token && $secret) {
             $signature = $this->getSignature()->fromRequest($request, $secret);
             $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
-        }
-    }
-
-    /**
-     * 
-     * @return string
-     * @throws Exception
-     */
-    public function getAuthToken() {
-        if (array_key_exists('token', $this->config)) {
-            return $this->config['token'];
-        } else {
-            $env = getenv('CB_AUTH_TOKEN');
-            if (!empty($env)) {
-                return $env;
-            }
-        }
-    }
-
-    /**
-     * 
-     * @return string
-     * @throws Exception
-     */
-    public function getAuthSecret() {
-        if (array_key_exists('secret', $this->config)) {
-            return $this->config['secret'];
-        } else {
-            $env = getenv('CB_AUTH_SECRET');
-            if (!empty($env)) {
-                return $env;
-            }
+        } elseif ($token xor $secret) {
+            throw new \RuntimeException('Both token and secret must be set');
         }
     }
 
@@ -170,19 +216,21 @@ class Client {
 
     /**
      * 
-     * @param array $config
-     * @return \ChartBlocks\Client
+     * @return \ChartBlocks\Signature
      */
-    public function setConfig(array $config) {
-        $this->config = $config;
-        return $this;
+    public function getSignature() {
+        if ($this->signature === null) {
+            $this->signature = new Signature();
+        }
+
+        return $this->signature;
     }
 
     /**
      * 
      * @return \Guzzle\Http\Client
      */
-    protected function getHttpClient() {
+    public function getHttpClient() {
         if ($this->httpClient === null) {
             $this->httpClient = $this->createHttpClient();
         }
@@ -192,29 +240,28 @@ class Client {
 
     /**
      * 
+     * @param array $config
+     * @return \ChartBlocks\Client
+     */
+    protected function setConfig(array $config) {
+        $this->config = $config;
+        return $this;
+    }
+
+    /**
+     * 
      * @return \Guzzle\Http\Client
      */
     protected function createHttpClient() {
         $client = new HttpClient($this->getApiUrl(), array());
 
+        $that = $this;
         $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
             $that->bindAccept($event['request']);
             $that->bindAuth($event['request']);
         });
 
         return $client;
-    }
-
-    /**
-     * 
-     * @return \ChartBlocks\Signature
-     */
-    protected function getSignature() {
-        if ($this->signature === null) {
-            $this->signature = new Signature();
-        }
-
-        return $this->signature;
     }
 
 }

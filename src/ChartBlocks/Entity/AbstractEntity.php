@@ -66,11 +66,11 @@ class AbstractEntity implements EntityInterface {
     public function getId() {
         $data = $this->getData();
 
-        if (!array_key_exists('id', $data)) {
-            throw new Exception('Entity not populated with ID');
+        if (array_key_exists('id', $data)) {
+            return $data['id'];
         }
 
-        return $data['id'];
+        return null;
     }
 
     public function __get($name) {
