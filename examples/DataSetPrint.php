@@ -1,23 +1,37 @@
 <?php
 include('_boostrap.php');
 
-// $config = array(
-//     'token' => '52de8d29054ff3600a000001',
-//     'secret' => '26dc572367b3fcebe3ef8607c63c01cb',
-// );
+$config = array(
+    'token' => '54326600c9a61d1025d2d25a',
+    'secret' => '7c7917c8d1ae3fe8c9aea94fb49221be',
+);
 
-$dataSetId = '52f139ea054ff30f1f000004';
+$dataSetId = '542bd8ebc9a61d2d03d5c969';
 
 $client = new \ChartBlocks\Client($config);
 
-$dataSetRepository = $client->getRepository('dataSet');
+/* @var $dataSet \ChartBlocks\Entity\DataSet */
+$dataSet = $client->dataSet->findById($dataSetId);
 
-$dataSet = $dataSetRepository->find($dataSetId);
+echo $dataSet->name . PHP_EOL;
+echo '=======================' . PHP_EOL;
 
-var_dump($dataSet);
+$rows = $dataSet->getData()->select();
+
+foreach ($rows as $row) {
+    echo 'Row ' . $row->getRowNumber() . PHP_EOL;
+    echo '-----------------------' . PHP_EOL;
+
+    $columns = array();
+    foreach ($row as $cell) {
+        $columns[] = $cell->getColumnNumber() . ': ' . $cell;
+    }
+
+    echo implode(' | ', $columns) . PHP_EOL;
+    echo PHP_EOL;
+}
+
 exit;
-
-
 
 $row = $dataSet->createRow();
 

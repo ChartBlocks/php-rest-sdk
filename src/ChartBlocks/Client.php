@@ -1,21 +1,22 @@
 <?php
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/**
- * Description of Client
- *
- * @author jay
- */
-
 namespace ChartBlocks;
 
 use Guzzle\Http\Client as HttpClient;
 use Guzzle\Http\Message\Request as HttpRequest;
 
+/**
+ * Client for managing connection to ChartBlocks REST API
+ * 
+ * @param \ChartBlocks\Repository\Chart $chart
+ * @param \ChartBlocks\Repository\DataSet $dataSet
+ * @param \ChartBlocks\Repository\ChartData $chartData
+ * @param \ChartBlocks\Repository\Profile $profile
+ * @param \ChartBlocks\Repository\SessionToken $sessionToken
+ * @param \ChartBlocks\Repository\Statistics $statistics
+ * @param \ChartBlocks\Repository\User $user
+ * 
+ */
 class Client {
 
     const REPO_CHART = 'chart';
