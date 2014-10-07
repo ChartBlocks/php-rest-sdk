@@ -2,7 +2,7 @@
 
 namespace ChartBlocks\Repository;
 
-class User extends AbstractRepository {
+class User extends AbstractWriteableRepository {
 
     public $url = 'user/';
     public $class = '\\ChartBlocks\\Entity\\User';

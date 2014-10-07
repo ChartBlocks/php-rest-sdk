@@ -147,9 +147,7 @@ class DataSet extends AbstractEntity {
      * @return boolean
      */
     public function truncate() {
-        $id = $this->getId();
-        $json = $this->getRepository()->getClient()->delete('data/' . $id);
-
+        $json = $this->getRepository()->getClient()->delete('data/' . $this->id);
         return (isset($json['success']) && $json['success']);
     }
 
@@ -158,12 +156,9 @@ class DataSet extends AbstractEntity {
      * @return array
      */
     public function getLatestVersionMeta() {
-        $data = $this->getData();
-        $versionsMeta = $data['versions'];
-
-        foreach ($versionsMeta as $versionMeta) {
-            if ($versionMeta['version'] == $data['latestVersionNumber']) {
-                return $versionMeta;
+        foreach ($this->versions as $meta) {
+            if ($meta['version'] == $this->latestVersionNumber) {
+                return $meta;
             }
         }
 

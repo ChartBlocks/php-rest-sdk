@@ -2,7 +2,7 @@
 
 namespace ChartBlocksTest;
 
-use ChartBlocks\Repository;
+use ChartBlocks\Repository\AbstractRepository;
 
 class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
 
@@ -30,32 +30,6 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
 
     public function testClientSetOnConstruction() {
         $this->assertInstanceOf('\ChartBlocks\Client', $this->repo->getClient());
-    }
-
-    public function testCreate() {
-        $data = array('name' => 'My chart');
-        $response = array('chart' => array('name' => 'My chart'));
-
-        $this->client->expects($this->once())
-                ->method('post')
-                ->with($this->repo->url, $data)
-                ->will($this->returnValue($response));
-
-        $repo = $this->getMock('\ChartBlocks\Repository\AbstractRepository', array(/* 'extractSingleItemData', */'igniteEntity'), array($this->client));
-        $repo->url = 'chart';
-        $repo->singleResponseKey = 'chart';
-//        $repo->expects($this->once())
-//                ->method('extractSingleItemData')
-//                ->with($response)
-//                ->will($this->returnValue($response['chart']));
-
-        $repo->expects($this->once())
-                ->method('igniteEntity')
-                ->with($response['chart'])
-                ->will($this->returnValue('ENTITY'));
-
-        $result = $repo->create($data);
-        $this->assertEquals('ENTITY', $result);
     }
 
     public function testFind() {
@@ -127,68 +101,6 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
     /**
      * @expectedException \ChartBlocks\Repository\Exception
      */
-    public function testUpdateWithEntityLackingId() {
-        $entity = $this->getMockForAbstractClass('\ChartBlocks\Entity\AbstractEntity', array($this->repo));
-        $this->repo->update($entity);
-    }
-
-    public function testUpdate() {
-        $id = '541fdd38c9a61d68707f9d86';
-        $data = array('name' => 'My Entity');
-        $entity = $this->getMock('\ChartBlocks\Entity\AbstractEntity', array('getId', 'toArray'), array($this->repo));
-        $entity->expects($this->once())
-                ->method('getId')
-                ->will($this->returnValue($id));
-        $entity->expects($this->once())
-                ->method('toArray')
-                ->will($this->returnValue($data));
-
-        $this->client->expects($this->once())
-                ->method('put')
-                ->with($this->repo->url . '/' . $id, $data);
-
-        $result = $this->repo->update($entity);
-        $this->assertSame($this->repo, $result);
-    }
-
-    /**
-     * @expectedException \InvalidArgumentException
-     */
-    public function testDeleteWithInvalidId() {
-        $this->repo->delete('qwijibo');
-    }
-
-    public function testDeleteWithId() {
-        $id = '541fdd38c9a61d68707f9d86';
-
-        $this->client->expects($this->once())
-                ->method('delete')
-                ->with($this->repo->url . '/' . $id)
-                ->will($this->returnValue(array('result' => true)));
-
-        $result = $this->repo->delete($id);
-        $this->assertTrue($result);
-    }
-
-    public function testDeleteWithEntity() {
-        $id = '541fdd38c9a61d68707f9d86';
-        $entity = $this->getMock('\ChartBlocks\Entity\AbstractEntity', array('getId'), array($this->repo));
-        $entity->expects($this->once())
-                ->method('getId')
-                ->will($this->returnValue($id));
-
-        $this->client->expects($this->once())
-                ->method('delete')
-                ->with($this->repo->url . '/' . $id)
-                ->will($this->returnValue(array('result' => true)));
-
-        $result = $this->repo->delete($entity);
-        $this->assertTrue($result);
-    }
-
-    /**
-     * @expectedException \ChartBlocks\Repository\Exception
-     */
     public function testExceptionThrownWhenMissingSingleResponseKey() {
         $id = '541fdd38c9a61d68707f9d86';
         $response = array('qwijibo' => null);
@@ -224,21 +136,6 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @depends testDeleteWithId
-     */
-    public function testDeleteWithInvalidResponse() {
-        $id = '541fdd38c9a61d68707f9d86';
-
-        $this->client->expects($this->once())
-                ->method('delete')
-                ->with($this->repo->url . '/' . $id)
-                ->will($this->returnValue(array('notRight' => true)));
-
-        $result = $this->repo->delete($id);
-        $this->assertFalse($result);
-    }
-
-    /**
      * @expectedException \ChartBlocks\Repository\Exception
      */
     public function testIgniteEntityWithEmptyClass() {
@@ -259,7 +156,7 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
         $result = $this->repo->igniteEntity(array('name' => 'My chart'));
 
         $this->assertInstanceOf($this->repo->class, $result);
-        $this->assertEquals('My chart', $result->getName());
+        $this->assertEquals('My chart', $result->name);
     }
 
 }

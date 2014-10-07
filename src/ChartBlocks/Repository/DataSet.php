@@ -5,7 +5,7 @@ namespace ChartBlocks\Repository;
 use ChartBlocks\Entity\DataSet as EntityDataSet;
 use ChartBlocks\DataSet\Creator;
 
-class DataSet extends AbstractRepository {
+class DataSet extends AbstractWriteableRepository {
 
     public $url = 'set/';
     public $class = '\\ChartBlocks\\Entity\\DataSet';
@@ -18,7 +18,7 @@ class DataSet extends AbstractRepository {
         $importData = array_merge($data, array(
             'sourceName' => $uploadResult['source'],
             'sourceOptions' => array(
-                'fileId ' => $uploadResult['file']['id']
+                'fileId' => $uploadResult['file']['id']
             )
         ));
 
