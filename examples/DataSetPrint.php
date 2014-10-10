@@ -1,4 +1,5 @@
 <?php
+
 include('_boostrap.php');
 
 $config = array(
@@ -19,57 +20,12 @@ echo '=======================' . PHP_EOL;
 $rows = $dataSet->getData()->select();
 
 foreach ($rows as $row) {
-    echo 'Row ' . $row->getRowNumber() . PHP_EOL;
-    echo '-----------------------' . PHP_EOL;
+    echo '#' . $row->getRowNumber() . ' ';
 
-    $columns = array();
     foreach ($row as $cell) {
-        $columns[] = $cell->getColumnNumber() . ': ' . $cell;
+        echo ' | ';
+        echo $cell;
     }
 
-    echo implode(' | ', $columns) . PHP_EOL;
     echo PHP_EOL;
 }
-
-exit;
-
-$row = $dataSet->createRow();
-
-$row->getCell(1)
-        ->setValue('woot');
-$row->getCell(3)
-        ->setValue('hmm woot');
-$row->getCell(5)
-        ->setValue('woot hmm');
-$row->getCell(7)
-        ->setValue('yay woot');
-$row->getCell(9)
-        ->setValue('woot yay');
-
-// $row->save();
-$offset = 0;
-$limit = 0;
-
-$rowSet = $dataSet->select(array(
-    'offset' => $offset,
-    'limit' => $limit
-        )
-);
-
-//$rowSet->getRow(24)->getCell(2)->setValue('putting something in row 25')->save();
-
-$i = $offset + 1;
-?>
-
-<table  border="1">
-    <tbody>
-        <?php foreach ($rowSet as $row): ?>
-            <tr>
-                <td><?php echo $i++ ?></td>
-                <?php foreach ($row->getCells() as $cell): ?>
-                    <td><?php echo $cell->getValue(); ?></td>
-                <?php endforeach; ?>
-            </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>

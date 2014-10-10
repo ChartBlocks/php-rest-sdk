@@ -4,17 +4,12 @@ namespace ChartBlocks\Chart;
 
 use ChartBlocks\Entity\Chart;
 
-class Config implements ChartAwareInterface {
+class Config {
 
-    protected $chart;
     protected $data;
 
     public function __construct($data = array()) {
         $this->data = $data;
-    }
-
-    public function __call($method, $arguments) {
-        return $this->__get($method);
     }
 
     public function __get($name) {
@@ -29,15 +24,6 @@ class Config implements ChartAwareInterface {
             }
             return $this->data[$name];
         }
-    }
-
-    public function getChart() {
-        return $this->chart;
-    }
-
-    public function setChart(Chart $chart) {
-        $this->chart = $chart;
-        return $this;
     }
 
 }

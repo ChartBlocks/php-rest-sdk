@@ -172,6 +172,10 @@ class RowSetCursor implements Iterator {
         return $result['data'];
     }
 
+    public function getMaxColumns() {
+        return $this->getVersionMeta()['columns'];
+    }
+
     /**
      * 
      * @return \ChartBlocks\Client

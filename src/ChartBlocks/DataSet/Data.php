@@ -97,8 +97,8 @@ class Data {
         return (isset($result['success']) && $result['success']);
     }
 
-    public function append(array $rowData) {
-        $rows = $this->parseRowData($rowData, false);
+    public function append(array $rows) {
+        $rows = $this->parseRowData($rows, false);
         if (count($rows) === 0) {
             throw new Exception('Must append at least one row');
         }
@@ -122,8 +122,8 @@ class Data {
      * @param \ChartBlocks\DataSet\Row[] $rowData
      * @return boolean
      */
-    public function update(array $rowData) {
-        $rows = $this->parseRowData($rowData, true);
+    public function update(array $rows) {
+        $rows = $this->parseRowData($rows, true);
         if (count($rows) === 0) {
             throw new Exception('Must update at least one row');
         }
@@ -142,10 +142,16 @@ class Data {
     public function parseRowData(array $rowData, $useKeyAsRowNumber = false) {
         $rows = array();
         foreach ($rowData as $rowKey => $aRow) {
+            $rowNumber = ($useKeyAsRowNumber) ? $rowKey : null;
+
             if ($aRow instanceof Row) {
+                if ($rowNumber && $aRow->getRowNumber() === null) {
+                    $aRow->setRowNumber($rowNumber);
+                }
+
                 $rows[] = $aRow;
             } else if (is_array($aRow)) {
-                $rowNumber = ($useKeyAsRowNumber) ? $rowKey : null;
+
                 $rows[] = new Row($rowNumber, $aRow);
             } else {
                 throw new \InvalidArgumentException('Invalid row data');
