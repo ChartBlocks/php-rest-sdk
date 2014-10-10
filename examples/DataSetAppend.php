@@ -3,8 +3,8 @@
 include('_boostrap.php');
 
 $config = array(
-    'token' => '54326600c9a61d1025d2d25a',
-    'secret' => '7c7917c8d1ae3fe8c9aea94fb49221be',
+    'token' => 'YOUR_TOKEN',
+    'secret' => 'YOUR_SECRET',
 );
 
 $dataSetId = '542bd8ebc9a61d2d03d5c969';
