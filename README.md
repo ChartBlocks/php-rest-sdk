@@ -8,7 +8,7 @@ The easiest way to start using the SDK is to download it with [Composer](http://
 ```json
 {
    "require": {
-     "chartblocks/php-rest-sdk": "~1.0"
+     "chartblocks/php-rest-sdk": "~1.1."
    }
 }
 ```
