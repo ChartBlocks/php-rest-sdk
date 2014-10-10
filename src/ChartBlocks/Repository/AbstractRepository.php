@@ -2,26 +2,49 @@
 
 namespace ChartBlocks\Repository;
 
-use ChartBlocks\Http\Client;
-use ChartBlocks\Http\ClientAwareInterface;
+use ChartBlocks\Client;
 use ChartBlocks\Entity\EntityInterface;
+use ChartBlocks\Entity\EntityId;
 
-abstract class AbstractRepository implements RepositoryInterface, ClientAwareInterface {
+abstract class AbstractRepository implements RepositoryInterface {
 
-    protected $httpClient;
-    protected $singleResponseKey;
-    protected $listResponseKey;
+    /**
+     *
+     * @var string|null
+     */
+    public $singleResponseKey;
+
+    /**
+     *
+     * @var string|null
+     */
+    public $listResponseKey;
+
+    /**
+     *
+     * @var \ChartBlocks\Client
+     */
+    protected $client;
 
     public function __construct(Client $client) {
-        $this->setHttpClient($client);
+        $this->setClient($client);
     }
 
-    public function create($data = array()) {
-        $client = $this->getHttpClient();
-        $response = $client->postJson($this->url, $data);
+    /**
+     * 
+     * @param \ChartBlocks\Client
+     */
+    public function setClient(Client $client) {
+        $this->client = $client;
+        return $this;
+    }
 
-        $classData = $this->extractSingleKeyData($response);
-        return $this->igniteClass($classData);
+    /**
+     * 
+     * @return \ChartBlocks\Client
+     */
+    public function getClient() {
+        return $this->client;
     }
 
     /**
@@ -29,77 +52,79 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
      * @param array $query
      * @return \ChartBlocks\Repository\ResultSet
      */
-    public function find($query = array()) {
-        $client = $this->getHttpClient();
-        $data = $client->getJson($this->url, $query);
+    public function find(array $query = array()) {
+        $response = $this->getClient()->get($this->url, $query);
+        $items = $this->extractListItemData($response);
 
-        $itemData = $this->extractListKeyData($data);
-        $items = array();
-        foreach ($itemData as $classData) {
-            $items[] = $this->igniteClass($classData);
+        $resultSet = new ResultSet();
+        foreach ($items as $item) {
+            $entity = $this->igniteEntity($item);
+            $resultSet->append($entity);
         }
-        $resultSet = new ResultSet($items);
-        if (isset($data['state']['totalRecords'])) {
-            $resultSet->setTotalRecords($data['state']['totalRecords']);
+
+        if (isset($response['state']['totalRecords'])) {
+            $resultSet->setTotalRecords($response['state']['totalRecords']);
         }
 
         return $resultSet;
     }
 
-    public function findById($id, $query = array()) {
-        $client = $this->getHttpClient();
-        $data = $client->getJson($this->url . '/' . $id, $query);
-        $classData = $this->extractSingleKeyData($data);
-        return $this->igniteClass($classData);
+    /**
+     * 
+     * @param string $id
+     * @param array $query
+     * @return \ChartBlocks\Entity\EntityInterface
+     */
+    public function findById($id, array $query = array()) {
+        if (EntityId::isValid($id) === false) {
+            throw new \InvalidArgumentException('Invalid entity ID');
+        }
+
+        $response = $this->getClient()->get($this->url . '/' . $id, $query);
+        $item = $this->extractSingleItemData($response);
+        return $this->igniteEntity($item);
     }
 
     /**
      * 
-     * @param \ChartBlocks\Entity\EntityInterface $entity
-     * @return \ChartBlocks\Repository\AbstractRepository
+     * @param array $data
+     * @return \ChartBlocks\Entity\EntityInterface
      * @throws Exception
      */
-    public function update(EntityInterface $entity) {
-        $id = $entity->getId();
-        if (empty($id)) {
-            throw new Exception('Entity has no ID, is it new?');
+    public function igniteEntity(array $data) {
+        $class = $this->class;
+        if (empty($class) || class_exists($class) === false) {
+            throw new Exception("Invalid entity class '$class'");
         }
 
-        $data = $entity->toArray();
-        $this->getHttpClient()->putJson($this->url . '/' . $id, $data);
-
-        return $this;
+        return new $class($this, $data);
     }
 
     /**
-     * 
-     * @param ChartBlocks\Entity\EntityInterface|string
-     * @return boolean
-     */
-    public function delete($set) {
-        $id = $this->extractIdFromParameter($set);
-        $json = $this->getHttpClient()->deleteJson($this->url . '/' . $id);
-
-        if ($json) {
-            return !!$json['result'];
-        }
-
-        return false;
-    }
-
-    /**
-     * @param \ChartBlocks\Entity\DataSet|string $set
+     * @param \ChartBlocks\Entity\EntityInterface|string $parameter
+     * @throws \InvalidArgumentException
      * @return string $setId
      */
-    protected function extractIdFromParameter($parameter) {
-        if ($parameter instanceof EntityInterface) {
-            return $parameter->getId();
-        } else {
-            return $parameter;
+    protected function extractIdFromParameter($idOrEntity) {
+        if (is_string($idOrEntity) && EntityId::isValid($idOrEntity)) {
+            return $idOrEntity;
         }
+
+        if ($idOrEntity instanceof EntityInterface) {
+            return $idOrEntity->getId();
+        }
+
+        throw new \InvalidArgumentException('Entity or Entity ID required');
     }
 
-    protected function extractSingleKeyData(array $data) {
+    /**
+     * Takes the raw JSON response and extracts the item data
+     * 
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    protected function extractSingleItemData(array $data) {
         if ($this->singleResponseKey && !array_key_exists($this->singleResponseKey, $data)) {
             throw new Exception('Invalid response, missing field ' . $this->singleResponseKey);
         }
@@ -107,38 +132,19 @@ abstract class AbstractRepository implements RepositoryInterface, ClientAwareInt
         return ($this->singleResponseKey) ? $data[$this->singleResponseKey] : $data;
     }
 
-    protected function extractListKeyData(array $data) {
+    /**
+     * Takes the raw JSON response and extracts the array of items
+     * 
+     * @param array $data
+     * @return array
+     * @throws Exception
+     */
+    protected function extractListItemData(array $data) {
         if ($this->listResponseKey && !array_key_exists($this->listResponseKey, $data)) {
             throw new Exception('Invalid response, missing field ' . $this->listResponseKey);
         }
 
         return ($this->listResponseKey) ? $data[$this->listResponseKey] : $data;
-    }
-
-    protected function igniteClass($data) {
-        $class = $this->class;
-        if (empty($class) || class_exists($class) === false) {
-            throw new Exception('Invalid entity class');
-        }
-
-        return new $class($this, $data);
-    }
-
-    /**
-     * 
-     * @param \ChartBlocks\Http\Client
-     */
-    public function setHttpClient(Client $client) {
-        $this->httpClient = $client;
-        return $this;
-    }
-
-    /**
-     * 
-     * @return \ChartBlocks\Http\Client
-     */
-    public function getHttpClient() {
-        return $this->httpClient;
     }
 
 }

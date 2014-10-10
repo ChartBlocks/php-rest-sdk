@@ -3,14 +3,39 @@
 namespace ChartBlocks\DataSet;
 
 use ChartBlocks\Entity\DataSet;
-use ChartBlocks\DataSet\Query;
+use ChartBlocks\DataSet\Query\Query;
+use Iterator;
 
-class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAwareInterface {
+class RowSetCursor implements Iterator {
 
+    /**
+     *
+     * @var \ChartBlocks\Entity\DataSet
+     */
     protected $dataSet;
-    protected $meta;
+
+    /**
+     *
+     * @var \ChartBlocks\DataSet\Query\Query
+     */
     protected $query;
-    protected $rows = array();
+
+    /**
+     *
+     * @var integer
+     */
+    protected $position;
+
+    /**
+     *
+     * @var \ChartBlocks\DataSet\RowCache\ArrayStorage
+     */
+    protected $rowCache;
+
+    /**
+     *
+     * @var integer
+     */
     protected $maxLoad = 50;
 
     /**
@@ -21,6 +46,25 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
     public function __construct(DataSet $dataSet, Query $query) {
         $this->setDataSet($dataSet);
         $this->setQuery($query);
+        $this->rewind();
+    }
+
+    /**
+     * 
+     * @param \ChartBlocks\Entity\DataSet $dataSet
+     * @return self
+     */
+    public function setDataSet(DataSet $dataSet) {
+        $this->dataSet = $dataSet;
+        return $this;
+    }
+
+    /**
+     * 
+     * @return \ChartBlocks\Entity\DataSet
+     */
+    public function getDataSet() {
+        return $this->dataSet;
     }
 
     /**
@@ -44,143 +88,128 @@ class RowSetCursor extends \ArrayObject implements RowSetInterface, DataSetAware
         return $this->query;
     }
 
-    /**
-     * 
-     * @return \ChartBlocks\DataSet\RowSetIterator
-     */
-    public function getIterator() {
-        $iterator = new \ChartBlocks\DataSet\RowSetIterator($this);
-        return $iterator;
+    public function rewind() {
+        $offset = (int) $this->getQuery()->getOffset();
+        $from = (int) $this->getQuery()->getFromRow();
+
+        $this->position = $from + $offset;
     }
 
-    /**
-     * 
-     * @param \ChartBlocks\DataSet\Row $row
-     * @return \ChartBlocks\DataSet\RowSetCursor
-     */
-    public function addRow(Row $row) {
-        $this->rows[$row->getRowNumber()] = $row;
-        return $this;
+    public function current() {
+        $row = $this->ensureRowIsLoaded($this->position);
+        return $row;
     }
 
-    /**
-     * 
-     * @param int $index
-     * @return \ChartBlocks\DataSet\Row
-     * @throws Exception
-     */
-    public function getRow($index) {
-        if ($this->isRowLoaded($index)) {
-            return $this->rows[$index];
-        }
-
-        if ($this->isValid($index)) {
-            $this->loadRowChunk($index);
-        }
-
-        if ($this->isRowLoaded($index)) {
-            return $this->rows[$index];
-        } else {
-            throw new Exception('Could not load row');
-        }
+    public function key() {
+        return $this->position;
     }
 
-    public function isRowLoaded($index) {
-        if (array_key_exists($index, $this->rows)) {
-            return true;
-        }
-        return false;
+    public function next() {
+        ++$this->position;
     }
 
-    public function isValid($index) {
+    public function valid() {
         $query = $this->getQuery();
-        $versionMeta = $this->getVersionMeta();
-
         $limit = $query->getLimit();
-        $max = $limit + ($query->getOffset()? : 0);
+        $toRow = $query->getToRow();
 
-        return ($index <= $max || !$limit) && ($index <= $versionMeta['rows']);
+        $meta = $this->getVersionMeta();
+        $rowsInSet = $meta['rows'];
+
+        $totalRows = ($toRow > 0) ? min($toRow, $rowsInSet) : $rowsInSet;
+        $max = ($limit > 0) ? min($limit, $totalRows) : $totalRows;
+
+        return ($this->position <= $max);
     }
 
-    public function loadRowChunk($index = 1) {
-        $dataSet = $this->getDataSet();
-
-        $params = $this->getQueryParams($index);
-        $uri = 'data/' . $dataSet->getId();
-
-        $client = $dataSet->getRepository()->getHttpClient();
-        $rows = $client->getJson($uri, $params);
-
-        $i = $index;
-
-
-        while ($i <= $params['limit'] + $params['offset']) {
-            $row = array(
-                'rowNumber' => $i,
-                'cells' => array_key_exists($i, $rows['data']) && array_key_exists('cells', $rows['data'][$i]) ? $rows['data'][$i]['cells'] : array()
-            );
-            $this->addRow(new Row($row));
-            $i++;
+    public function getRowCache() {
+        if (null === $this->rowCache) {
+            $this->rowCache = new RowCache\ArrayStorage();
         }
+
+        return $this->rowCache;
     }
 
-    protected function getQueryParams($index) {
-        $versionMeta = $this->getVersionMeta();
-        $offset = $index - 1;
-        $query = $this->getQuery();
+    public function ensureRowIsLoaded($rowNumber) {
+        $cache = $this->getRowCache();
+        if ($cache->has($rowNumber)) {
+            return $cache->get($rowNumber);
+        }
 
+        $rows = $this->loadRowChunk($rowNumber, $this->maxLoad);
+
+        if (false === array_key_exists($rowNumber, $rows)) {
+            throw new Exception("Row $rowNumber was not loaded in chunk");
+        }
+
+        return $rows[$rowNumber];
+    }
+
+    public function loadRowChunk($fromRow = 1, $max = 50) {
+        $data = $this->requestRowsFromServer($fromRow, $max);
+        $cache = $this->getRowCache();
+
+        $rows = array();
+        foreach ($data as $rowNumber => $rowData) {
+            $row = new Row($rowNumber, $rowData['cells']);
+            $rows[$rowNumber] = $row;
+
+            $cache->store($row);
+        }
+
+        return $rows;
+    }
+
+    public function requestRowsFromServer($fromRow, $max) {
+        $params = $this->getLoadParams($fromRow, $max);
+        $uri = 'data/' . $this->getDataSet()->id;
+
+        $result = $this->getClient()->get($uri, $params);
+        if (false === array_key_exists('data', $result)) {
+            throw new Exception('Invalid response requesting rows');
+        }
+
+        return $result['data'];
+    }
+
+    public function getMaxColumns() {
+        return $this->getVersionMeta()['columns'];
+    }
+
+    /**
+     * 
+     * @return \ChartBlocks\Client
+     */
+    public function getClient() {
+        return $this->getDataSet()->getRepository()->getClient();
+    }
+
+    protected function getLoadParams($fromRow, $max) {
         $params = array(
-            'offset' => $offset,
-            'version' => $versionMeta['version']
+            'fromRow' => $fromRow,
+            'limit' => $max
         );
-        $limit = $query->getLimit() > ($versionMeta['rows'] - $offset) ? $versionMeta['rows'] - $offset : $query->getLimit();
 
-        if ($limit) {
-            $params ['offset'] = $offset;
-        }
         return $params;
     }
 
     protected function getVersionMeta() {
-        $version = $this->getQuery()->getVersion();
+        $versionNumber = $this->getQuery()->getVersion();
         $dataSet = $this->getDataSet();
-        $data = $dataSet->getData();
 
-        if ($version === false) {
-            $version = $data['latestVersionNumber'];
+        if (empty($versionNumber)) {
+            $versionNumber = $dataSet->latestVersionNumber;
+        } elseif ($versionNumber > $dataSet->latestVersionNumber) {
+            throw new Exception('Query version is higher than the latest available version');
         }
 
-        if ($version > $data['latestVersionNumber']) {
-            throw new Exception('Version requested is greater than the latest version.');
-        }
-
-        $versionsMeta = $data['versions'];
-
-        foreach ($versionsMeta as $versionMeta) {
-            if ($versionMeta['version'] == $version) {
-                return $versionMeta;
+        foreach ($dataSet->versions as $version) {
+            if ($version['version'] == $versionNumber) {
+                return $version;
             }
         }
 
-        return false;
-    }
-
-    /**
-     * 
-     * @param \ChartBlocks\Entity\DataSet $dataSet
-     * @return self
-     */
-    public function setDataSet(DataSet $dataSet) {
-        $this->dataSet = $dataSet;
-        return $this;
-    }
-
-    /**
-     * 
-     * @return \ChartBlocks\Entity\DataSet
-     */
-    public function getDataSet() {
-        return $this->dataSet;
+        throw new Exception("Version $versionNumber not found");
     }
 
 }

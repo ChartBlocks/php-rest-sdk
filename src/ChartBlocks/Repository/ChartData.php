@@ -4,8 +4,8 @@ namespace ChartBlocks\Repository;
 
 class ChartData extends AbstractRepository {
 
-    protected $url = '/chart/data';
-    protected $class = '\\ChartBlocks\\Entity\\ChartData';
-    protected $singleResponseKey = 'data';
+    public $url = 'chart/data/';
+    public $class = '\\ChartBlocks\\Entity\\ChartData';
+    public $singleResponseKey = 'data';
 
 }

@@ -46,8 +46,11 @@ class AbstractEntity implements EntityInterface {
      * @param array $data
      * @return \ChartBlocks\Entity\AbstractEntity
      */
-    public function setData($data) {
-        $this->data = $data;
+    public function setData(array $data) {
+        foreach ($data as $key => $value) {
+            $this->{$key} = $value;
+        }
+
         return $this;
     }
 
@@ -55,7 +58,7 @@ class AbstractEntity implements EntityInterface {
      * 
      * @return array
      */
-    public function getData() {
+    public function toArray() {
         return $this->data;
     }
 
@@ -64,36 +67,90 @@ class AbstractEntity implements EntityInterface {
      * @return string|null
      */
     public function getId() {
-        $data = $this->getData();
-
-        if (!array_key_exists('id', $data)) {
-            throw new Exception('Entity not populated with ID');
-        }
-
-        return $data['id'];
+        return $this->retrieve('id');
     }
 
+    /**
+     * 
+     * @param string $name
+     * @return mixed
+     */
     public function __get($name) {
         $method = 'get' . ucfirst($name);
         if (method_exists($this, $method)) {
             return $this->$method();
         }
+
+        return $this->retrieve($name);
     }
 
+    /**
+     * 
+     * @param string $name
+     * @param mixed $value
+     * @return self
+     */
     public function __set($name, $value) {
-
         $method = 'set' . ucfirst($name);
         if (method_exists($this, $method)) {
-            return call_user_func(array($this, $method), $value);
+            call_user_func(array($this, $method), $value);
+        } else {
+            $this->store($name, $value);
         }
+
+        return $this;
     }
 
+    /**
+     * 
+     * @param string $name
+     * @return boolean
+     */
     public function __isset($name) {
-        $method = 'get' . ucfirst($name);
-        if (method_exists($this, $method)) {
-            return true;
+        $value = array_key_exists($name, $this->data) ? $this->data[$name] : null;
+        return ($value !== null);
+    }
+
+    public function __call($name, $arguments) {
+        $prefix = substr($name, 0, 3);
+        if ($prefix === 'get') {
+            $property = lcfirst(substr($name, 3));
+            return $this->retrieve($property);
         }
-        return false;
+
+        if ($prefix === 'set') {
+            $property = lcfirst(substr($name, 3));
+            return $this->store($property, reset($arguments));
+        }
+
+        throw new Exception("Method '$name' does not exist");
+    }
+
+    /**
+     * 
+     * @return \ChartBlocks\Entity\EntityFactory
+     */
+    public function getEntityFactory() {
+        return new EntityFactory($this->getRepository()->getClient());
+    }
+
+    /**
+     * 
+     * @param string $name
+     * @param mixed $value
+     * @return self
+     */
+    protected function store($name, $value) {
+        $this->data[$name] = $value;
+        return $this;
+    }
+
+    /**
+     * 
+     * @param string $name
+     */
+    protected function retrieve($name) {
+        return isset($this->data[$name]) ? $this->data[$name] : null;
     }
 
 }

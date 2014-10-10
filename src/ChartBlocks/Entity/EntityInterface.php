@@ -12,9 +12,9 @@ interface EntityInterface {
 
     public function getRepository();
 
-    public function setData($data);
+    public function setData(array $data);
 
-    public function getData();
+    public function toArray();
 
     public function getId();
 }

@@ -5,56 +5,25 @@ namespace ChartBlocks\Repository;
 use ChartBlocks\Entity\DataSet as EntityDataSet;
 use ChartBlocks\DataSet\Creator;
 
-class DataSet extends AbstractRepository {
+class DataSet extends AbstractWriteableRepository {
 
-    protected $url = '/set';
-    protected $class = '\\ChartBlocks\\Entity\\DataSet';
-    protected $singleResponseKey = 'set';
-    protected $listResponseKey = 'sets';
+    public $url = 'set/';
+    public $class = '\\ChartBlocks\\Entity\\DataSet';
+    public $singleResponseKey = 'set';
+    public $listResponseKey = 'sets';
 
-    public function create(array $options = array()) {
-        $client = $this->getHttpClient();
+    public function createFromFile($file, array $data = array()) {
+        $uploadResult = $this->getClient()->postFile('upload', $file);
 
-        $params = array(
-            'sourceName' => 'blank'
-        );
+        $importData = array_merge($data, array(
+            'sourceName' => $uploadResult['source'],
+            'sourceOptions' => array(
+                'fileId' => $uploadResult['file']['id']
+            )
+        ));
 
-        if ($name = (isset($options['name']) ? $options['name'] : null)) {
-            unset($options['name']);
-            $params['name'] = $name;
-        } else {
-            $params['name'] = 'Untitled set';
-        }
-
-
-        if ($file = (isset($options['file']) ? $options['file'] : null)) {
-
-            unset($options['file']);
-
-            $fileJson = $client->postFile('upload', $file);
-
-            $params['sourceOptions'] = array_merge($options, array(
-                'fileId' => $fileJson['file']['id'],
-            ));
-            $params['sourceName'] = $fileJson['source'];
-        }
-        
-        
-        $importData = $client->postJson('set/import', $params);
-
-        return $this->findById($importData['id']);
-    }
-
-    /**
-     * TRUNCATE SET, THERE IS NO GOING BACK
-     * @param ChartBlocks\Entity\DataSet|string $set
-     */
-    public function truncate($set) {
-        $id = $this->extractId($set);
-        if ($json = $this->getHttpClient()->deleteJson('data/' . $id)) {
-            return !!$json['success'];
-        }
-        return false;
+        $importResult = $this->getClient()->post('set/import', $importData);
+        return $this->findById($importResult['id']);
     }
 
 }

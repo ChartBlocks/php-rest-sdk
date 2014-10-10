@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="php-rest-sdk" default="build" phingVersion="2.4.14">
+    <property name="basedir" value="." />
+    <resolvepath propertyName="absbasedir" file="${basedir}" />
+    <resolvepath propertyName="vendor_dir" file="${basedir}/vendor" />
+    
+    <target name="build">
+        <mkdir dir="${absbasedir}/reports" />
+    </target>
+    
+    <target name="tests">
+        <exec command="phpunit" passthru="true" checkreturn="true" />
+    </target>
+</project>

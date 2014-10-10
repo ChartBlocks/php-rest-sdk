@@ -2,11 +2,11 @@
 
 namespace ChartBlocks\Repository;
 
-class Chart extends AbstractRepository {
+class Chart extends AbstractWriteableRepository {
 
-    protected $url = '/chart';
-    protected $class = '\\ChartBlocks\\Entity\\Chart';
-    protected $singleResponseKey = 'chart';
-    protected $listResponseKey = 'charts';
+    public $url = 'chart/';
+    public $class = '\\ChartBlocks\\Entity\\Chart';
+    public $singleResponseKey = 'chart';
+    public $listResponseKey = 'charts';
 
 }
