@@ -114,7 +114,7 @@ class Client {
      * @return string|null
      */
     public function getAuthToken() {
-        if (array_key_exists('token', $this->config)) {
+        if (isset($this->config['token'])) {
             return $this->config['token'];
         } else {
             $env = getenv('CB_AUTH_TOKEN');
@@ -131,7 +131,7 @@ class Client {
      * @return string|null
      */
     public function getAuthSecret() {
-        if (array_key_exists('secret', $this->config)) {
+        if (isset($this->config['secret'])) {
             return $this->config['secret'];
         } else {
             $env = getenv('CB_AUTH_SECRET');
