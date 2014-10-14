@@ -156,23 +156,28 @@ class Client {
 
     public function put($uri, $data = array()) {
         $path = $this->parseApiPath($uri);
-        $request = $this->getHttpClient()->put($path, null, json_encode($data));
+        $json = empty($data) ? null : json_encode($data);
 
+        $request = $this->getHttpClient()->put($path, null, $json);
         $response = $request->send();
         return $response->json();
     }
 
     public function post($uri, $data = array()) {
         $path = $this->parseApiPath($uri);
-        $request = $this->getHttpClient()->post($path, null, json_encode($data));
+        $json = empty($data) ? null : json_encode($data);
 
+        $request = $this->getHttpClient()->post($path, null, $json);
         $response = $request->send();
+
         return $response->json();
     }
 
     public function delete($uri, $data = array()) {
+        $json = empty($data) ? null : json_encode($data);
+
         $path = $this->parseApiPath($uri);
-        $request = $this->getHttpClient()->delete($path, null, json_encode($data));
+        $request = $this->getHttpClient()->delete($path, null, $json);
 
         $response = $request->send();
         return $response->json();
