@@ -84,13 +84,9 @@ abstract class AbstractRepository implements RepositoryInterface {
         try {
             $response = $this->getClient()->get($this->url . '/' . $id, $query);
         } Catch (ClientErrorResponseException $e) {
-            if ($e->getResponse()->getStatusCode() === 404) {
-                throw new Exception\NotFoundException('Item does not exist', 404, $e);
-            } else {
-                throw $e;
-            }
+            $this->handleResponseException($e);
         }
-        
+
         $item = $this->extractSingleItemData($response);
         return $this->igniteEntity($item);
     }
@@ -155,6 +151,25 @@ abstract class AbstractRepository implements RepositoryInterface {
         }
 
         return ($this->listResponseKey) ? $data[$this->listResponseKey] : $data;
+    }
+
+    /**
+     * 
+     * @param \Guzzle\Http\Exception\ClientErrorResponseException $e
+     * @throws Exception\NotFoundException
+     * @throws \Guzzle\Http\Exception\ClientErrorResponseException
+     */
+    protected function handleResponseException(ClientErrorResponseException $e) {
+        switch ($e->getResponse()->getStatusCode()) {
+            case 400:
+                throw new Exception\InvalidRequestException('Invalid request', 400, $e);
+            case 403:
+                throw new Exception\PermissionDeniedException('Permission denied', 403, $e);
+            case 404:
+                throw new Exception\NotFoundException('Item does not exist', 404, $e);
+            default:
+                throw $e;
+        }
     }
 
 }

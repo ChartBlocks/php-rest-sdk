@@ -2,6 +2,6 @@
 
 namespace ChartBlocks\Repository\Exception;
 
-class NotFoundException extends RequestException {
+class InvalidRequestException extends \RuntimeException {
     
 }
