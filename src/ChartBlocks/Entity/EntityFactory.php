@@ -30,7 +30,6 @@ class EntityFactory {
      */
     public function createInstanceOf($entityName, $object) {
         $class = '\ChartBlocks\Entity\\' . $entityName;
-        $repository = '\ChartBlocks\Repository\\' . $entityName;
 
         if ($object instanceof $class) {
             return $object;
@@ -41,7 +40,7 @@ class EntityFactory {
         }
 
         if (is_array($object)) {
-            $repo = $this->client->getRepository($repository);
+            $repo = $this->client->getRepository($entityName);
             return new $class($repo, $object);
         }
 

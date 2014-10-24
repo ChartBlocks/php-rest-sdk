@@ -38,7 +38,7 @@ class EntityFactoryTest extends \PHPUnit_Framework_TestCase {
 
         $this->client->expects($this->once())
                 ->method('getRepository')
-                ->with('\ChartBlocks\Repository\Chart')
+                ->with('Chart')
                 ->will($this->returnValue($repository));
 
         $factory = new EntityFactory($this->client);

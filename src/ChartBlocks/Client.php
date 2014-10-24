@@ -19,6 +19,7 @@ use Guzzle\Http\Message\Request as HttpRequest;
  */
 class Client {
 
+    const REPO_ACCOUNT = 'account';
     const REPO_CHART = 'chart';
     const REPO_CHARTDATA = 'chartData';
     const REPO_DATASET = 'dataSet';
@@ -33,6 +34,7 @@ class Client {
     protected $httpClient;
     protected $defaultApiUrl = 'https://api.chartblocks.com/v1/';
     protected $repositories = array(
+        self::REPO_ACCOUNT => '\\ChartBlocks\Repository\Account',
         self::REPO_CHART => '\\ChartBlocks\Repository\Chart',
         self::REPO_CHARTDATA => '\\ChartBlocks\Repository\ChartData',
         self::REPO_DATASET => '\\ChartBlocks\Repository\DataSet',
@@ -57,16 +59,17 @@ class Client {
      * @throws Exception
      */
     public function getRepository($name) {
-        if (false === array_key_exists($name, $this->repositories)) {
-            throw new \InvalidArgumentException("Repository $name does not exist");
+        $repo = lcfirst(trim($name));
+        if (false === array_key_exists($repo, $this->repositories)) {
+            throw new \InvalidArgumentException("Repository $repo does not exist");
         }
 
-        if (is_string($this->repositories[$name])) {
-            $className = $this->repositories[$name];
-            $this->repositories[$name] = new $className($this);
+        if (is_string($this->repositories[$repo])) {
+            $className = $this->repositories[$repo];
+            $this->repositories[$repo] = new $className($this);
         }
 
-        return $this->repositories[$name];
+        return $this->repositories[$repo];
     }
 
     /**

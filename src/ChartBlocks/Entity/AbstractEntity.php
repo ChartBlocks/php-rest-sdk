@@ -3,8 +3,9 @@
 namespace ChartBlocks\Entity;
 
 use ChartBlocks\Repository\RepositoryInterface;
+use JsonSerializable;
 
-class AbstractEntity implements EntityInterface {
+class AbstractEntity implements EntityInterface, JsonSerializable {
 
     /**
      *
@@ -64,6 +65,14 @@ class AbstractEntity implements EntityInterface {
 
     /**
      * 
+     * @return array
+     */
+    public function jsonSerialize() {
+        return $this->toArray();
+    }
+
+    /**
+     * 
      * @return string|null
      */
     public function getId() {
@@ -107,8 +116,7 @@ class AbstractEntity implements EntityInterface {
      * @return boolean
      */
     public function __isset($name) {
-        $value = array_key_exists($name, $this->data) ? $this->data[$name] : null;
-        return ($value !== null);
+        return array_key_exists($name, $this->data);
     }
 
     public function __call($name, $arguments) {

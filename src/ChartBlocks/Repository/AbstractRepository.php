@@ -5,6 +5,7 @@ namespace ChartBlocks\Repository;
 use ChartBlocks\Client;
 use ChartBlocks\Entity\EntityInterface;
 use ChartBlocks\Entity\EntityId;
+use Guzzle\Http\Exception\ClientErrorResponseException;
 
 abstract class AbstractRepository implements RepositoryInterface {
 
@@ -80,7 +81,16 @@ abstract class AbstractRepository implements RepositoryInterface {
             throw new \InvalidArgumentException('Invalid entity ID');
         }
 
-        $response = $this->getClient()->get($this->url . '/' . $id, $query);
+        try {
+            $response = $this->getClient()->get($this->url . '/' . $id, $query);
+        } Catch (ClientErrorResponseException $e) {
+            if ($e->getResponse()->getStatusCode() === 404) {
+                throw new Exception\NotFoundException('Item does not exist', 404, $e);
+            } else {
+                throw $e;
+            }
+        }
+        
         $item = $this->extractSingleItemData($response);
         return $this->igniteEntity($item);
     }

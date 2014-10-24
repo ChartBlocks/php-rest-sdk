@@ -30,8 +30,4 @@ class Chart extends AbstractEntity {
         return $this;
     }
 
-    public function getConfig() {
-        return $this->config;
-    }
-
 }

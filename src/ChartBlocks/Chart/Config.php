@@ -2,28 +2,48 @@
 
 namespace ChartBlocks\Chart;
 
-use ChartBlocks\Entity\Chart;
+use JsonSerializable;
 
-class Config {
+class Config implements JsonSerializable {
 
-    protected $data;
+    protected $data = array();
 
-    public function __construct($data = array()) {
-        $this->data = $data;
+    public function __construct(array $array = array()) {
+        $this->setConfig($array);
+    }
+
+    public function setConfig($array) {
+        foreach ($array as $k => $v) {
+            if (strlen($k)) {
+                $this->{$k} = $v;
+            }
+        }
+
+        return $this;
+    }
+
+    public function __set($name, $value) {
+        if (is_array($value)) {
+            $value = new Config($value);
+        }
+
+        $this->data[$name] = $value;
     }
 
     public function __get($name) {
-        if (isset($this->data[$name])) {
+        return isset($this->data[$name]) ? $this->data[$name] : null;
+    }
 
-            if ($this->data[$name] instanceof self) {
+    public function __isset($name) {
+        return isset($this->data[$name]);
+    }
 
-                return $this->data[$name];
-            } else if (is_array($this->data[$name])) {
+    public function toArray() {
+        return $this->data;
+    }
 
-                return $this->data[$name] = new self($this->data[$name]);
-            }
-            return $this->data[$name];
-        }
+    public function jsonSerialize() {
+        return $this->toArray();
     }
 
 }
