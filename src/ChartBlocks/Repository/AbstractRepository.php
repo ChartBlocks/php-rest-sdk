@@ -54,7 +54,12 @@ abstract class AbstractRepository implements RepositoryInterface {
      * @return \ChartBlocks\Repository\ResultSet
      */
     public function find(array $query = array()) {
-        $response = $this->getClient()->get($this->url, $query);
+        try {
+            $response = $this->getClient()->get($this->url, $query);
+        } Catch (ClientErrorResponseException $e) {
+            $this->handleResponseException($e);
+        }
+
         $items = $this->extractListItemData($response);
 
         $resultSet = new ResultSet();
