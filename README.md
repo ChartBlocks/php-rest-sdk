@@ -31,7 +31,7 @@ $client = new \ChartBlocks\Client(array(
   ));
   
 $dataSets = $client->getRepository('dataSet');
-$myDataSet = $dataSets->find('52f139ea054ff30f1f000004');
+$myDataSet = $dataSets->findById('52f139ea054ff30f1f000004');
 
 $myDataSet->append(array(
   new \ChartBlocks\DataSet\Row(null, array('a', 'b', 'c')),
