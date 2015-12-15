@@ -34,8 +34,8 @@ $dataSets = $client->getRepository('dataSet');
 $myDataSet = $dataSets->find('52f139ea054ff30f1f000004');
 
 $myDataSet->append(array(
-  new \ChartBlocks\DataSet\Row(array('a', 'b', 'c')),
-  new \ChartBlocks\DataSet\Row(array('d', 'e', 'f'))
+  new \ChartBlocks\DataSet\Row(null, array('a', 'b', 'c')),
+  new \ChartBlocks\DataSet\Row(null, array('d', 'e', 'f'))
 ));
 ?>
 ```
