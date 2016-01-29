@@ -128,9 +128,12 @@ class Data {
             throw new Exception('Must update at least one row');
         }
 
-        $putData = array();
+        $putData = array(
+            'data' => array()
+        );
+
         foreach ($rows as $row) {
-            $putData[$row->getRowNumber()] = $row->toArray();
+            $putData['data'][$row->getRowNumber()] = $row->toArray();
         }
 
         $setId = $this->getDataSet()->id;
