@@ -5,7 +5,7 @@ namespace ChartBlocks\DataSet;
 class CellFactory {
 
     public function createService($parameters) {
-        if (is_scalar($parameters)) {
+        if ($parameters === null || is_scalar($parameters)) {
             $parameters = array(
                 'v' => $parameters,
                 't' => 's'
