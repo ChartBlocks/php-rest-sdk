@@ -5,7 +5,7 @@ namespace ChartBlocks\Repository;
 use ChartBlocks\Client;
 use ChartBlocks\Entity\EntityInterface;
 use ChartBlocks\Entity\EntityId;
-use Guzzle\Http\Exception\ClientErrorResponseException;
+use GuzzleHttp\Exception\BadResponseException;
 
 abstract class AbstractRepository implements RepositoryInterface {
 
@@ -23,7 +23,7 @@ abstract class AbstractRepository implements RepositoryInterface {
 
     /**
      *
-     * @var \ChartBlocks\Client
+     * @var Client
      */
     protected $client;
 
@@ -31,32 +31,32 @@ abstract class AbstractRepository implements RepositoryInterface {
         $this->setClient($client);
     }
 
-    /**
-     * 
-     * @param \ChartBlocks\Client
-     */
-    public function setClient(Client $client) {
+    public function setClient(Client $client): AbstractRepository
+    {
         $this->client = $client;
         return $this;
     }
 
     /**
      * 
-     * @return \ChartBlocks\Client
+     * @return Client
      */
-    public function getClient() {
+    public function getClient(): Client
+    {
         return $this->client;
     }
 
     /**
-     * 
+     *
      * @param array $query
-     * @return \ChartBlocks\Repository\ResultSet
+     * @return ResultSet
+     * @throws Exception
      */
-    public function find(array $query = array()) {
+    public function find(array $query = array()): ResultSet
+    {
         try {
             $response = $this->getClient()->get($this->url, $query);
-        } Catch (ClientErrorResponseException $e) {
+        } Catch (BadResponseException $e) {
             $this->handleResponseException($e);
         }
 
@@ -76,19 +76,21 @@ abstract class AbstractRepository implements RepositoryInterface {
     }
 
     /**
-     * 
+     *
      * @param string $id
      * @param array $query
-     * @return \ChartBlocks\Entity\EntityInterface
+     * @return EntityInterface
+     * @throws Exception
      */
-    public function findById($id, array $query = array()) {
+    public function findById($id, array $query = array()): EntityInterface
+    {
         if (EntityId::isValid($id) === false) {
             throw new \InvalidArgumentException('Invalid entity ID');
         }
 
         try {
             $response = $this->getClient()->get($this->url . '/' . $id, $query);
-        } Catch (ClientErrorResponseException $e) {
+        } Catch (BadResponseException $e) {
             $this->handleResponseException($e);
         }
 
@@ -99,10 +101,11 @@ abstract class AbstractRepository implements RepositoryInterface {
     /**
      * 
      * @param array $data
-     * @return \ChartBlocks\Entity\EntityInterface
+     * @return EntityInterface
      * @throws Exception
      */
-    public function igniteEntity(array $data) {
+    public function igniteEntity(array $data): EntityInterface
+    {
         $class = $this->class;
         if (empty($class) || class_exists($class) === false) {
             throw new Exception("Invalid entity class '$class'");
@@ -112,11 +115,11 @@ abstract class AbstractRepository implements RepositoryInterface {
     }
 
     /**
-     * @param \ChartBlocks\Entity\EntityInterface|string $parameter
-     * @throws \InvalidArgumentException
+     * @param $idOrEntity
      * @return string $setId
      */
-    protected function extractIdFromParameter($idOrEntity) {
+    protected function extractIdFromParameter($idOrEntity): string
+    {
         if (is_string($idOrEntity) && EntityId::isValid($idOrEntity)) {
             return $idOrEntity;
         }
@@ -135,7 +138,8 @@ abstract class AbstractRepository implements RepositoryInterface {
      * @return array
      * @throws Exception
      */
-    protected function extractSingleItemData(array $data) {
+    protected function extractSingleItemData(array $data): array
+    {
         if ($this->singleResponseKey && !array_key_exists($this->singleResponseKey, $data)) {
             throw new Exception('Invalid response, missing field ' . $this->singleResponseKey);
         }
@@ -150,7 +154,8 @@ abstract class AbstractRepository implements RepositoryInterface {
      * @return array
      * @throws Exception
      */
-    protected function extractListItemData(array $data) {
+    protected function extractListItemData(array $data): array
+    {
         if ($this->listResponseKey && !array_key_exists($this->listResponseKey, $data)) {
             throw new Exception('Invalid response, missing field ' . $this->listResponseKey);
         }
@@ -160,11 +165,11 @@ abstract class AbstractRepository implements RepositoryInterface {
 
     /**
      * 
-     * @param \Guzzle\Http\Exception\ClientErrorResponseException $e
+     * @param BadResponseException $e
      * @throws Exception\NotFoundException
-     * @throws \Guzzle\Http\Exception\ClientErrorResponseException
+     * @throws BadResponseException
      */
-    protected function handleResponseException(ClientErrorResponseException $e) {
+    protected function handleResponseException(BadResponseException $e) {
         switch ($e->getResponse()->getStatusCode()) {
             case 400:
                 throw new Exception\InvalidRequestException('Invalid request', 400, $e);

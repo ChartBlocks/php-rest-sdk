@@ -4,7 +4,7 @@ namespace ChartBlocksTest;
 
 use ChartBlocks\Entity\EntityFactory;
 
-class EntityFactoryTest extends \PHPUnit_Framework_TestCase {
+class EntityFactoryTest extends \PHPUnit\Framework\TestCase {
 
     /**
      *
@@ -13,7 +13,7 @@ class EntityFactoryTest extends \PHPUnit_Framework_TestCase {
     protected $client;
 
     public function setUp() {
-        $this->client = $this->getMock('\ChartBlocks\Client');
+        $this->client = $this->createMock('\ChartBlocks\Client');
     }
 
     public function testGivenActualClass() {
@@ -34,7 +34,7 @@ class EntityFactoryTest extends \PHPUnit_Framework_TestCase {
 
         $repository = $this->getMockBuilder('\ChartBlocks\Repository\Chart')
                 ->disableOriginalConstructor()
-                ->getMock();
+                ->createMock();
 
         $this->client->expects($this->once())
                 ->method('getRepository')

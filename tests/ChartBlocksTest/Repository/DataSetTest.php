@@ -3,8 +3,9 @@
 namespace ChartBlocksTest;
 
 use ChartBlocks\Repository\DataSet;
+use PHPUnit\Framework\TestCase;
 
-class DataSetTest extends \PHPUnit_Framework_TestCase {
+class DataSetTest extends TestCase {
 
     /**
      *
@@ -39,8 +40,8 @@ class DataSetTest extends \PHPUnit_Framework_TestCase {
             'id' => '2'
         );
 
-        $client = $this->getMock('\ChartBlocks\Client');
-        $dataSet = $this->getMock('\ChartBlocks\Repository\DataSet', array('getClient', 'findById'), array($client));
+        $client = $this->createMock('\ChartBlocks\Client');
+        $dataSet = $this->createMock('\ChartBlocks\Repository\DataSet');
 
         $dataSet->expects($this->any())
                 ->method('getClient')

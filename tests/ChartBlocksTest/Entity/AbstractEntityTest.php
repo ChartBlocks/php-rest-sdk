@@ -4,7 +4,7 @@ namespace ChartBlocksTest;
 
 use ChartBlocks\Entity\AbstractEntity;
 
-class AbstractEntityTest extends \PHPUnit_Framework_TestCase {
+class AbstractEntityTest extends \PHPUnit\Framework\TestCase {
 
     /**
      *
@@ -24,7 +24,7 @@ class AbstractEntityTest extends \PHPUnit_Framework_TestCase {
     protected $data;
 
     public function setUp() {
-        $this->repo = $this->getMock('\ChartBlocks\Repository\AbstractRepository', array(), array(), '', false);
+        $this->repo = $this->createMock('\ChartBlocks\Repository\AbstractRepository');
         $this->data = array('name' => 'Qwijibo');
         $this->entity = $this->getMockForAbstractClass('\ChartBlocks\Entity\AbstractEntity', array($this->repo, $this->data));
     }
@@ -147,7 +147,7 @@ class AbstractEntityTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testGetEntityFactory() {
-        $client = $this->getMock('\ChartBlocks\Client');
+        $client = $this->createMock('\ChartBlocks\Client');
         $this->entity->getRepository()->expects($this->once())
                 ->method('getClient')
                 ->will($this->returnValue($client));

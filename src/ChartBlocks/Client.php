@@ -2,19 +2,33 @@
 
 namespace ChartBlocks;
 
-use Guzzle\Http\Client as HttpClient;
-use Guzzle\Http\Message\Request as HttpRequest;
+use ChartBlocks\Repository\Chart;
+use ChartBlocks\Repository\ChartData;
+use ChartBlocks\Repository\DataSet;
+use ChartBlocks\Repository\Profile;
+use ChartBlocks\Repository\RepositoryInterface;
+use ChartBlocks\Repository\SessionToken;
+use ChartBlocks\Repository\Statistics;
+use ChartBlocks\Repository\User;
+use Closure;
+use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7;
+use InvalidArgumentException;
+use Psr\Http\Message\RequestInterface;
+use RuntimeException;
+use function GuzzleHttp\choose_handler;
 
 /**
  * Client for managing connection to ChartBlocks REST API
  * 
- * @param \ChartBlocks\Repository\Chart $chart
- * @param \ChartBlocks\Repository\DataSet $dataSet
- * @param \ChartBlocks\Repository\ChartData $chartData
- * @param \ChartBlocks\Repository\Profile $profile
- * @param \ChartBlocks\Repository\SessionToken $sessionToken
- * @param \ChartBlocks\Repository\Statistics $statistics
- * @param \ChartBlocks\Repository\User $user
+ * @param Chart $chart
+ * @param DataSet $dataSet
+ * @param ChartData $chartData
+ * @param Profile $profile
+ * @param SessionToken $sessionToken
+ * @param Statistics $statistics
+ * @param User $user
  * 
  */
 class Client {
@@ -30,7 +44,6 @@ class Client {
 
     protected $config;
     protected $signature;
-    protected $exceptionHandler;
     protected $httpClient;
     protected $defaultApiUrl = 'https://api.chartblocks.com/v1/';
     protected $repositories = array(
@@ -55,13 +68,12 @@ class Client {
     /**
      * 
      * @param string $name
-     * @return \ChartBlocks\Repository\RepositoryInterface
-     * @throws Exception
+     * @return RepositoryInterface
      */
     public function getRepository($name) {
         $repo = lcfirst(trim($name));
         if (false === array_key_exists($repo, $this->repositories)) {
-            throw new \InvalidArgumentException("Repository $repo does not exist");
+            throw new InvalidArgumentException("Repository $repo does not exist");
         }
 
         if (is_string($this->repositories[$repo])) {
@@ -76,7 +88,7 @@ class Client {
      * Tries to load a repository using the syntax $this->chart
      * 
      * @param string $name
-     * @return \ChartBlocks\Repository\RepositoryInterface
+     * @return RepositoryInterface
      * @throws Exception
      */
     public function __get($name) {
@@ -91,7 +103,8 @@ class Client {
      * 
      * @return string
      */
-    public function getApiUrl() {
+    public function getApiUrl(): string
+    {
         if (array_key_exists('api_url', $this->config)) {
             return $this->parseApiUrl($this->config['api_url']);
         }
@@ -104,11 +117,13 @@ class Client {
         return $this->defaultApiUrl;
     }
 
-    protected function parseApiUrl($url) {
+    protected function parseApiUrl($url): string
+    {
         return rtrim($url, '/') . '/';
     }
 
-    protected function parseApiPath($path) {
+    protected function parseApiPath($path): string
+    {
         return ltrim($path, '/');
     }
 
@@ -148,86 +163,64 @@ class Client {
 
     public function get($uri, array $params = array()) {
         $path = $this->parseApiPath($uri);
-        $request = $this->getHttpClient()->get($path);
-        foreach ($params as $key => $value) {
-            $request->getQuery()->set($key, $value);
-        }
+        $response = $this->getHttpClient()->get($path, [
+            'query' => $params
+        ]);
 
-        $response = $request->send();
-        return $response->json();
+        return json_decode($response->getBody(), true);
     }
 
     public function put($uri, $data = array()) {
         $path = $this->parseApiPath($uri);
         $json = empty($data) ? null : json_encode($data);
 
-        $request = $this->getHttpClient()->put($path, null, $json);
-        $response = $request->send();
-        return $response->json();
+        $response = $this->getHttpClient()->put($path, [
+            'body' => $json
+        ]);
+
+        return json_decode($response->getBody(), true);
     }
 
     public function post($uri, $data = array()) {
         $path = $this->parseApiPath($uri);
         $json = empty($data) ? null : json_encode($data);
 
-        $request = $this->getHttpClient()->post($path, null, $json);
-        $response = $request->send();
+        $response = $this->getHttpClient()->post($path, [
+            'body' => $json
+        ]);
 
-        return $response->json();
+        return json_decode($response->getBody(), true);
     }
 
     public function delete($uri, $data = array()) {
         $json = empty($data) ? null : json_encode($data);
 
         $path = $this->parseApiPath($uri);
-        $request = $this->getHttpClient()->delete($path, null, $json);
+        $response = $this->getHttpClient()->delete($path, [
+            'body' => $json
+        ]);
 
-        $response = $request->send();
-        return $response->json();
+        return json_decode($response->getBody(), true);
     }
 
     public function postFile($uri, $file, $contentType = null) {
         $path = $this->parseApiPath($uri);
-        $request = $this->getHttpClient()->post($path);
-
-        $request->addPostFile('upload', $file, $contentType);
-
-        $response = $request->send();
-        return $response->json();
+        $body = Psr7\Utils::streamFor(fopen($file, 'r'));
+        $response = $this->getHttpClient()->post($path, [
+            'body' => $body,
+            'headers' => [
+                'Content-Type' => $contentType ?: 'application/octet-stream'
+            ]
+        ]);
+        return json_decode($response->getBody(), true);
     }
 
     /**
      * 
-     * @param \Guzzle\Http\Message\Request $request
-     * @throws Exception
+     * @return Signature
      */
-    public function bindAuth(HttpRequest $request) {
-        $token = $this->getAuthToken();
-        $secret = $this->getAuthSecret();
-
-        if ($token && $secret) {
-            $signature = $this->getSignature()->fromRequest($request, $secret);
-            $request->setHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
-        } elseif ($token xor $secret) {
-            throw new \RuntimeException('Both token and secret must be set');
-        }
-    }
-
-    /**
-     * 
-     * @param \Guzzle\Http\Message\Request $request
-     * @return \ChartBlocks\Client
-     */
-    public function bindAccept(HttpRequest $request) {
-        $request->setHeader('Accept', 'application/json');
-        return $this;
-    }
-
-    /**
-     * 
-     * @return \ChartBlocks\Signature
-     */
-    public function getSignature() {
+    public function getSignature(): Signature
+    {
         if ($this->signature === null) {
             $this->signature = new Signature();
         }
@@ -236,10 +229,11 @@ class Client {
     }
 
     /**
-     * 
-     * @return \Guzzle\Http\Client
+     *
+     * @return HttpClient
      */
-    public function getHttpClient() {
+    public function getHttpClient(): HttpClient
+    {
         if ($this->httpClient === null) {
             $this->httpClient = $this->createHttpClient();
         }
@@ -250,27 +244,54 @@ class Client {
     /**
      * 
      * @param array $config
-     * @return \ChartBlocks\Client
+     * @return Client
      */
-    protected function setConfig(array $config) {
+    protected function setConfig(array $config): Client
+    {
         $this->config = $config;
         return $this;
     }
 
     /**
-     * 
-     * @return \Guzzle\Http\Client
+     *
+     * @return HttpClient
      */
-    protected function createHttpClient() {
-        $client = new HttpClient($this->getApiUrl(), array());
+    protected function createHttpClient(): HttpClient
+    {
+        $stack = new HandlerStack();
+        $stack->setHandler(choose_handler());
+        $stack->push($this->handleHeaders());
 
-        $that = $this;
-        $client->getEventDispatcher()->addListener('request.before_send', function($event) use ($that) {
-            $that->bindAccept($event['request']);
-            $that->bindAuth($event['request']);
-        });
+        return new HttpClient([
+            'base_uri' => $this->getApiUrl(),
+            'handler' => $stack,
+            'headers' => [
+                'Accept' => 'application/json'
+            ]
+        ]);
+    }
 
-        return $client;
+    /**
+     * @return Closure
+     * @throws RuntimeException
+     */
+    public function handleHeaders(): Closure
+    {
+        return function (callable $handler) {
+            return function (RequestInterface $request, array $options) use ($handler) {
+                $token = $this->getAuthToken();
+                $secret = $this->getAuthSecret();
+
+                if ($token && $secret) {
+                    $signature = $this->getSignature()->fromRequest($request, $secret);
+                    $request = $request->withHeader('Authorization', 'Basic ' . base64_encode($token . ':' . $signature));
+                } elseif ($token xor $secret) {
+                    throw new RuntimeException('Both token and secret must be set');
+                }
+
+                return $handler($request, $options);
+            };
+        };
     }
 
 }

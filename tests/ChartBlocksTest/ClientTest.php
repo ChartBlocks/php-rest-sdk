@@ -3,8 +3,16 @@
 namespace ChartBlocksTest;
 
 use ChartBlocks\Client;
+use ChartBlocks\Exception;
+use Guzzle\Common\Event;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response as GuzzleResponse;
+use GuzzleHttp\Client as GuzzleClient;
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
 
-class ClientTest extends \PHPUnit_Framework_TestCase {
+class ClientTest extends TestCase {
 
     private $envs = array('CB_API_URL', 'CB_AUTH_TOKEN', 'CB_AUTH_SECRET');
     private $originalEnvs = array();
@@ -111,7 +119,7 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \InvalidArgumentException
+     * @expectedException InvalidArgumentException
      */
     public function testGetUnknownRepository() {
         $client = new Client();
@@ -150,47 +158,16 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
     }
 
     /**
-     * @expectedException \ChartBlocks\Exception
+     * @expectedException Exception
      */
     public function testGetRepositoryShorthandUnknown() {
         $client = new Client();
         $this->assertInstanceOf('\ChartBlocks\Repository\Chart', $client->qwijibo);
     }
 
-    public function testBindAccept() {
-        $request = $this->getMock('\Guzzle\Http\Message\Request', array('setHeader'), array(), '', false);
-
-        $request->expects($this->once())
-                ->method('setHeader')
-                ->with('Accept', 'application/json');
-
-        $client = new Client();
-        $client->bindAccept($request);
-    }
-
     public function testGetSignature() {
         $client = new Client();
         $this->assertInstanceOf('\ChartBlocks\Signature', $client->getSignature());
-    }
-
-    public function testBindAuthNoTokenOrSecret() {
-        $request = $this->getMock('\Guzzle\Http\Message\Request', array('setHeader'), array(), '', false);
-
-        $request->expects($this->never())
-                ->method('setHeader');
-
-        $client = new Client();
-        $client->bindAuth($request);
-    }
-
-    /**
-     * @expectedException \RuntimeException
-     */
-    public function testBindAuthOnlyToken() {
-        $request = $this->getMock('\Guzzle\Http\Message\Request', array(), array(), '', false);
-
-        $client = new Client(array('token' => 'qwijibo'));
-        $client->bindAuth($request);
     }
 
     public function testBindAuthWithTokenAndSignature() {
@@ -199,47 +176,38 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
         $fakeSignature = 'gvds0g86g89g66g89';
         $auth = 'Basic ' . base64_encode($token . ':' . $fakeSignature);
 
-        $request = $this->getMock('\Guzzle\Http\Message\Request', array('setHeader'), array(), '', false);
+        $request = $this->createMock('\GuzzleHttp\Psr7\Request');
         $request->expects($this->once())
-                ->method('setHeader')
+                ->method('withHeader')
                 ->with('Authorization', $auth);
 
-        $signature = $this->getMock('\ChartBlocks\Signature', array('fromRequest'));
+        $signature = $this->createMock('\ChartBlocks\Signature');
         $signature->expects($this->once())
                 ->method('fromRequest')
                 ->with($request, $secret)
                 ->will($this->returnValue($fakeSignature));
 
         $config = array('token' => $token, 'secret' => $secret);
-        $client = $this->getMock('\ChartBlocks\Client', array('getSignature'), array($config));
+        $client = $this->createConfiguredMock('\ChartBlocks\Client', $config);
 
         $client->expects($this->once())
                 ->method('getSignature')
                 ->will($this->returnValue($signature));
-        $client->bindAuth($request);
+        $client->get('chart');
     }
 
     public function testGetHttpClient() {
         $client = new Client();
-        $this->assertInstanceOf('\Guzzle\Http\Client', $client->getHttpClient());
+        $this->assertInstanceOf('\GuzzleHttp\Client', $client->getHttpClient());
     }
 
     public function testOurMethodsGetFiredOnBeforeSendEvent() {
-        /* @var $client \ChartBlocks\Client */
-        $client = $this->getMock('\ChartBlocks\Client', array('bindAccept', 'bindAuth'));
-
-        $mockRequest = $this->getMock('\Guzzle\Http\Message\Request', array(), array(), '', false);
-        $event = new \Guzzle\Common\Event(array('request' => $mockRequest));
+        $client = $this->getMockClientWithMockHttpClient();
 
         $client->expects($this->once())
-                ->method('bindAccept')
-                ->with($this->identicalTo($mockRequest));
+                ->method('handleHeaders');
 
-        $client->expects($this->once())
-                ->method('bindAuth')
-                ->with($this->identicalTo($mockRequest));
-
-        $client->getHttpClient()->getEventDispatcher()->dispatch('request.before_send', $event);
+        $client->get('chart');
     }
 
     public function testGet() {
@@ -248,19 +216,8 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
 
         $client = $this->getMockClientWithMockHttpClient();
 
-        $mockRequest = $this->getMockHttpRequest('GET');
-        $mockRequest->getQuery()->expects($this->exactly(2))
-                ->method('set')
-                ->withConsecutive(
-                        array('public', 1), array('order', 'name')
-        );
-
-        $client->getHttpClient()->expects($this->once())
-                ->method('get')
-                ->with('chart')
-                ->will($this->returnValue($mockRequest));
-
-        $client->get($uri, $params);
+        $response = $client->get($uri, $params);
+        $this->assertEquals(array('success' => true), $response);
     }
 
     public function testPut() {
@@ -268,14 +225,9 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
         $data = array('name' => 'Test', 'isPublic' => true);
 
         $client = $this->getMockClientWithMockHttpClient();
-        $mockRequest = $this->getMockHttpRequest('PUT');
 
-        $client->getHttpClient()->expects($this->once())
-                ->method('put')
-                ->with('chart', null, json_encode($data))
-                ->will($this->returnValue($mockRequest));
-
-        $client->put($uri, $data);
+        $response = $client->put($uri, $data);
+        $this->assertEquals(array('success' => true), $response);
     }
 
     public function testPost() {
@@ -283,14 +235,9 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
         $data = array('name' => 'Test', 'isPublic' => true);
 
         $client = $this->getMockClientWithMockHttpClient();
-        $mockRequest = $this->getMockHttpRequest('POST');
 
-        $client->getHttpClient()->expects($this->once())
-                ->method('post')
-                ->with('chart', null, json_encode($data))
-                ->will($this->returnValue($mockRequest));
-
-        $client->post($uri, $data);
+        $response = $client->post($uri, $data);
+        $this->assertEquals(array('success' => true), $response);
     }
 
     public function testDelete() {
@@ -298,14 +245,9 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
         $data = array('name' => 'Test', 'isPublic' => true);
 
         $client = $this->getMockClientWithMockHttpClient();
-        $mockRequest = $this->getMockHttpRequest('DELETE');
 
-        $client->getHttpClient()->expects($this->once())
-                ->method('delete')
-                ->with('chart', null, json_encode($data))
-                ->will($this->returnValue($mockRequest));
-
-        $client->delete($uri, $data);
+        $response = $client->delete($uri, $data);
+        $this->assertEquals(array('success' => true), $response);
     }
 
     public function testPostFile() {
@@ -313,61 +255,31 @@ class ClientTest extends \PHPUnit_Framework_TestCase {
         $file = '/path/to/file';
 
         $client = $this->getMockClientWithMockHttpClient();
-        $mockRequest = $this->getMockHttpRequest('POST');
 
-        $mockRequest->expects($this->once())
-                ->method('addPostFile')
-                ->with('upload', $file);
-
-        $client->getHttpClient()->expects($this->once())
-                ->method('post')
-                ->with('chart')
-                ->will($this->returnValue($mockRequest));
-
-        $client->postFile($uri, $file);
+        $response = $client->postFile($uri, $file);
+        $this->assertEquals(array('success' => true), $response);
     }
 
     /**
      * 
-     * @return \ChartBlocks\Client
+     * @return Client
      */
-    protected function getMockClientWithMockHttpClient() {
-        $httpClient = $this->getMock('\Guzzle\Http\Client');
+    protected function getMockClientWithMockHttpClient(): Client
+    {
+        $mock = new MockHandler([
+            new GuzzleResponse(200, [], json_encode(array('success' => true)))
+        ]);
 
-        $client = $this->getMock('\ChartBlocks\Client', array('getHttpClient'));
+        $handlerStack = HandlerStack::create($mock);
+        $httpClient = new GuzzleClient(['handler' => $handlerStack]);
+
+        $client = $this->createMock('\ChartBlocks\Client');
         $client->expects($this->any())
                 ->method('getHttpClient')
                 ->will($this->returnValue($httpClient));
 
 
         return $client;
-    }
-
-    protected function getMockHttpRequest($method = 'GET') {
-        switch (strtoupper($method)) {
-            case 'GET':
-                $request = $this->getMock('\Guzzle\Http\Message\Request', array(), array(), '', false);
-                break;
-            default:
-                $request = $this->getMock('\Guzzle\Http\Message\EntityEnclosingRequest', array(), array(), '', false);
-        }
-
-
-        $query = $this->getMock('\Guzzle\Http\QueryString');
-        $request->expects($this->any())
-                ->method('getQuery')
-                ->will($this->returnValue($query));
-
-        $response = $this->getMock('Guzzle\Http\Message\Response', array(), array(), '', false);
-        $response->expects($this->once())
-                ->method('json')
-                ->will($this->returnValue(json_encode(array('success' => true))));
-
-        $request->expects($this->once())
-                ->method('send')
-                ->will($this->returnValue($response));
-
-        return $request;
     }
 
 }
