@@ -3,8 +3,9 @@
 namespace ChartBlocksTest;
 
 use ChartBlocks\Signature;
+use PHPUnit\Framework\TestCase;
 
-class SignatureTest extends \PHPUnit_Framework_TestCase {
+class SignatureTest extends TestCase {
 
     public function testGenerate() {
         $secretKey = '26dc572367b3fcebe3ef8607c63c01cb';
@@ -42,7 +43,7 @@ class SignatureTest extends \PHPUnit_Framework_TestCase {
     protected function doFromRequestWith($method, $secretKey, $body, $query, $expected) {
         $request = $this->getMockRequest($method, $body, $query);
 
-        $signature = $this->getMock('\ChartBlocks\Signature', array('generate'));
+        $signature = $this->createMock('\ChartBlocks\Signature');
         $signature->expects($this->once())
                 ->method('generate')
                 ->with($expected, $secretKey)
@@ -53,20 +54,7 @@ class SignatureTest extends \PHPUnit_Framework_TestCase {
     }
 
     protected function getMockRequest($method, $body, $query) {
-        switch (strtoupper($method)) {
-            case 'GET':
-                $request = $this->getMock('\Guzzle\Http\Message\Request', array(), array(), '', false);
-                $request->expects($this->once())
-                        ->method('getQuery')
-                        ->with(true)
-                        ->will($this->returnValue($query));
-                break;
-            default:
-                $request = $this->getMock('\Guzzle\Http\Message\EntityEnclosingRequest', array(), array(), '', false);
-                $request->expects($this->once())
-                        ->method('getBody')
-                        ->will($this->returnValue($body));
-        }
+        $request = $this->createMock('\GuzzleHttp\Psr7\Request');
 
         $request->expects($this->once())
                 ->method('getMethod')

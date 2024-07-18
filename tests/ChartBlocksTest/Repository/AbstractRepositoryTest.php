@@ -4,7 +4,7 @@ namespace ChartBlocksTest;
 
 use ChartBlocks\Repository\AbstractRepository;
 
-class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
+class AbstractRepositoryTest extends \PHPUnit\Framework\TestCase {
 
     /**
      *
@@ -19,7 +19,7 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
     protected $client;
 
     public function setUp() {
-        $this->client = $this->getMock('\ChartBlocks\Client');
+        $this->client = $this->createMock('\ChartBlocks\Client');
         $this->repo = $this->getMockForAbstractClass('\ChartBlocks\Repository\AbstractRepository', array($this->client));
 
         $this->repo->url = 'chart';
@@ -49,7 +49,7 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
                 ->with($this->repo->url, $query)
                 ->will($this->returnValue($response));
 
-        $repo = $this->getMock('\ChartBlocks\Repository\AbstractRepository', array(/* 'extractListItemData', */'igniteEntity'), array($this->client));
+        $repo = $this->createMock('\ChartBlocks\Repository\AbstractRepository');
         $repo->url = 'chart';
         $repo->listResponseKey = 'charts';
 //        $repo->expects($this->once())
@@ -85,7 +85,7 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
                 ->with($this->repo->url . '/' . $id, $query)
                 ->will($this->returnValue($response));
 
-        $repo = $this->getMock('\ChartBlocks\Repository\AbstractRepository', array(/* 'extractSingleItemData', */'igniteEntity'), array($this->client));
+        $repo = $this->createMock('\ChartBlocks\Repository\AbstractRepository');
         $repo->url = 'chart';
         $repo->singleResponseKey = 'chart';
 
@@ -110,7 +110,7 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
                 ->with($this->repo->url . '/' . $id)
                 ->will($this->returnValue($response));
 
-        $repo = $this->getMock('\ChartBlocks\Repository\AbstractRepository', array(/* 'extractSingleItemData', */'igniteEntity'), array($this->client));
+        $repo = $this->createMock('\ChartBlocks\Repository\AbstractRepository');
         $repo->url = 'chart';
         $repo->singleResponseKey = 'chart';
 
@@ -128,7 +128,7 @@ class AbstractRepositoryTest extends \PHPUnit_Framework_TestCase {
                 ->with($this->repo->url)
                 ->will($this->returnValue($response));
 
-        $repo = $this->getMock('\ChartBlocks\Repository\AbstractRepository', array(/* 'extractSingleItemData', */'igniteEntity'), array($this->client));
+        $repo = $this->createMock('\ChartBlocks\Repository\AbstractRepository');
         $repo->url = 'chart';
         $repo->listResponseKey = 'charts';
 

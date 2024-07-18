@@ -2,11 +2,12 @@
 
 namespace ChartBlocks;
 
-use Guzzle\Http\Message\Request;
+use Psr\Http\Message\RequestInterface;
 
 class Signature {
 
-    public function fromRequest(Request $request, $secretKey) {
+    public function fromRequest(RequestInterface $request, $secretKey): string
+    {
         $method = strtolower($request->getMethod());
 
         switch ($method) {
@@ -17,12 +18,13 @@ class Signature {
                 $body = (string) $request->getBody();
                 break;
             default:
-                $body = $request->getQuery(true);
+                $body = $request->getUri()->getQuery();
         }
         return $this->generate($body, $secretKey);
     }
 
-    public function generate($body, $secretKey) {
+    public function generate($body, $secretKey): string
+    {
         return base64_encode(sha1(sha1($body) . $secretKey));
     }
 

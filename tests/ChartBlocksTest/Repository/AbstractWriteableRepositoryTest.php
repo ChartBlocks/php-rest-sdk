@@ -4,7 +4,7 @@ namespace ChartBlocksTest;
 
 use ChartBlocks\Repository\AbstractWriteableRepository;
 
-class AbstractWriteableRepositoryTest extends \PHPUnit_Framework_TestCase {
+class AbstractWriteableRepositoryTest extends \PHPUnit\Framework\TestCase {
 
     /**
      *
@@ -19,7 +19,7 @@ class AbstractWriteableRepositoryTest extends \PHPUnit_Framework_TestCase {
     protected $client;
 
     public function setUp() {
-        $this->client = $this->getMock('\ChartBlocks\Client');
+        $this->client = $this->createMock('\ChartBlocks\Client');
         $this->repo = $this->getMockForAbstractClass('\ChartBlocks\Repository\AbstractWriteableRepository', array($this->client));
 
         $this->repo->url = 'chart';
@@ -37,7 +37,7 @@ class AbstractWriteableRepositoryTest extends \PHPUnit_Framework_TestCase {
                 ->with($this->repo->url, $data)
                 ->will($this->returnValue($response));
 
-        $repo = $this->getMock('\ChartBlocks\Repository\AbstractWriteableRepository', array(/* 'extractSingleItemData', */'igniteEntity'), array($this->client));
+        $repo = $this->createMock('\ChartBlocks\Repository\AbstractWriteableRepository');
         $repo->url = 'chart';
         $repo->singleResponseKey = 'chart';
 //        $repo->expects($this->once())
@@ -65,7 +65,7 @@ class AbstractWriteableRepositoryTest extends \PHPUnit_Framework_TestCase {
     public function testUpdate() {
         $id = '541fdd38c9a61d68707f9d86';
         $data = array('name' => 'My Entity');
-        $entity = $this->getMock('\ChartBlocks\Entity\AbstractEntity', array('getId', 'toArray'), array($this->repo));
+        $entity = $this->createMock('\ChartBlocks\Entity\AbstractEntity');
         $entity->expects($this->once())
                 ->method('getId')
                 ->will($this->returnValue($id));
@@ -102,7 +102,7 @@ class AbstractWriteableRepositoryTest extends \PHPUnit_Framework_TestCase {
 
     public function testDeleteWithEntity() {
         $id = '541fdd38c9a61d68707f9d86';
-        $entity = $this->getMock('\ChartBlocks\Entity\AbstractEntity', array('getId'), array($this->repo));
+        $entity = $this->createMock('\ChartBlocks\Entity\AbstractEntity');
         $entity->expects($this->once())
                 ->method('getId')
                 ->will($this->returnValue($id));

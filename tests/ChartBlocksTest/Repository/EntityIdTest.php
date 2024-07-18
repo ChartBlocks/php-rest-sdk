@@ -4,7 +4,7 @@ namespace ChartBlocksTest;
 
 use ChartBlocks\Entity\EntityId;
 
-class EntityIdTest extends \PHPUnit_Framework_TestCase {
+class EntityIdTest extends \PHPUnit\Framework\TestCase {
 
     /**
      *
